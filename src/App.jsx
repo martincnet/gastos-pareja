@@ -12,12 +12,12 @@ import {
 
 // ⚠️ REEMPLAZÁ CON TUS CREDENCIALES DE FIREBASE
 const firebaseConfig = {
-  apiKey: "TU_API_KEY",
-  authDomain: "TU_AUTH_DOMAIN",
-  projectId: "TU_PROJECT_ID",
-  storageBucket: "TU_STORAGE_BUCKET",
-  messagingSenderId: "TU_MESSAGING_SENDER_ID",
-  appId: "TU_APP_ID",
+  apiKey: "AIzaSyBbN60YgAm7HHcdIO2az43g2PhZsUS2CNA",
+  authDomain: "gastos-pareja-a2a0b.firebaseapp.com",
+  projectId: "gastos-pareja-a2a0b",
+  storageBucket: "gastos-pareja-a2a0b.firebasestorage.app",
+  messagingSenderId: "1081231883778",
+  appId: "1:1081231883778:web:395365a07c41d562c0311b"
 };
 
 const app = initializeApp(firebaseConfig);
