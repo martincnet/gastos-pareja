@@ -329,11 +329,12 @@ export default function App() {
         timestamp: Date.now(),
         cargadoPor: usuario.uid,
         cargadoPorNombre: usuarioData?.nombre || "",
-      })setForm({ descripcion: "", categoria: "comida", monto: "", modo: "pague_yo_mitad" });
-const snap = await getDocs(query(collection(db, "gastos"), where("grupoId", "==", grupoActivo.id), orderBy("timestamp", "desc")));
-setGastos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-mostrarToast("¡Gasto cargado! 🎉");
-setVista("inicio");
+      });
+      setForm({ descripcion: "", categoria: "comida", monto: "", modo: "pague_yo_mitad" });
+      const snap = await getDocs(query(collection(db, "gastos"), where("grupoId", "==", grupoActivo.id), orderBy("timestamp", "desc")));
+      setGastos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      mostrarToast("¡Gasto cargado! 🎉");
+      setVista("inicio");
     } catch {
       mostrarToast("Error al guardar 😥", "err");
     }
