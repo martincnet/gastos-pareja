@@ -12,12 +12,12 @@ import {
 
 // ⚠️ REEMPLAZÁ CON TUS CREDENCIALES DE FIREBASE
 const firebaseConfig = {
-  apiKey: "AIzaSyBbN60YgAm7HHcdIO2az43g2PhZsUS2CNA",
-  authDomain: "gastos-pareja-a2a0b.firebaseapp.com",
-  projectId: "gastos-pareja-a2a0b",
-  storageBucket: "gastos-pareja-a2a0b.firebasestorage.app",
-  messagingSenderId: "1081231883778",
-  appId: "1:1081231883778:web:395365a07c41d562c0311b"
+  apiKey: "TU_API_KEY",
+  authDomain: "TU_AUTH_DOMAIN",
+  projectId: "TU_PROJECT_ID",
+  storageBucket: "TU_STORAGE_BUCKET",
+  messagingSenderId: "TU_MESSAGING_SENDER_ID",
+  appId: "TU_APP_ID",
 };
 
 const app = initializeApp(firebaseConfig);
@@ -45,7 +45,6 @@ const COLORES_GRUPO = [
   "linear-gradient(135deg, #ee0979, #ff6a00)",
 ];
 
-// Modos desde la perspectiva de quien carga el gasto
 const MODOS = [
   { id: "pague_yo_total", label: "Pagué yo, me deben el total", emoji: "💸", desc: "El otro te debe todo" },
   { id: "pague_yo_mitad", label: "Pagué yo, me deben la mitad", emoji: "✂️", desc: "Se divide al 50%" },
@@ -53,18 +52,10 @@ const MODOS = [
   { id: "pago_otro_mitad", label: "Pagó el otro, le debo la mitad", emoji: "💝", desc: "Se divide al 50%" },
 ];
 
-// Calcula el balance desde la perspectiva del usuario actual
-// gasto.cargadoPor = uid de quien cargó el gasto
-// si yo cargué el gasto:
-//   pague_yo_total → el otro me debe el total → +monto
-//   pague_yo_mitad → el otro me debe la mitad → +monto/2
-//   pago_otro_total → yo le debo el total → -monto
-//   pago_otro_mitad → yo le debo la mitad → -monto/2
-// si el otro cargó el gasto (perspectiva invertida):
-//   pague_yo_total (desde su perspectiva) → él pagó, yo le debo el total → -monto
-//   pague_yo_mitad → él pagó, yo le debo la mitad → -monto/2
-//   pago_otro_total → yo pagué, él me debe el total → +monto
-//   pago_otro_mitad → yo pagué, él me debe la mitad → +monto/2
+function formatMonto(n) {
+  return n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 function calcularBalance(gastos, miUid) {
   let balance = 0;
   for (const g of gastos) {
@@ -75,7 +66,6 @@ function calcularBalance(gastos, miUid) {
       else if (g.modo === "pago_otro_total") balance -= g.monto;
       else if (g.modo === "pago_otro_mitad") balance -= g.monto / 2;
     } else {
-      // El otro cargó → perspectiva invertida
       if (g.modo === "pague_yo_total") balance -= g.monto;
       else if (g.modo === "pague_yo_mitad") balance -= g.monto / 2;
       else if (g.modo === "pago_otro_total") balance += g.monto;
@@ -85,7 +75,6 @@ function calcularBalance(gastos, miUid) {
   return balance;
 }
 
-// Etiqueta del gasto desde la perspectiva del usuario actual
 function getEtiqueta(g, miUid, nombreOtro) {
   const yoCargue = g.cargadoPor === miUid;
   const modo = g.modo;
@@ -103,19 +92,16 @@ function getEtiqueta(g, miUid, nombreOtro) {
   return { label: "", emoji: "" };
 }
 
-// Monto a mostrar desde la perspectiva del usuario
 function getMontoYSigno(g, miUid) {
   const yoCargue = g.cargadoPor === miUid;
   const esMitad = g.modo.includes("mitad");
   const monto = esMitad ? g.monto / 2 : g.monto;
-
   let meDebenAMi;
   if (yoCargue) {
     meDebenAMi = g.modo === "pague_yo_total" || g.modo === "pague_yo_mitad";
   } else {
     meDebenAMi = g.modo === "pago_otro_total" || g.modo === "pago_otro_mitad";
   }
-
   return { monto, signo: meDebenAMi ? "+" : "-", color: meDebenAMi ? "#fb7185" : "#a78bfa" };
 }
 
@@ -357,6 +343,7 @@ export default function App() {
       const batch = writeBatch(db);
       snap.docs.forEach(d => batch.delete(d.ref));
       await batch.commit();
+      setGastos([]);
       mostrarToast("¡Cuentas saldadas! Empiecen de cero 🥂");
     } catch {
       mostrarToast("Error al saldar 😥", "err");
@@ -365,7 +352,6 @@ export default function App() {
 
   const abrirGrupo = (grupo) => {
     setGrupoActivo(grupo);
-    setGastos([]);
     setFiltro("todos");
     setVista("inicio");
   };
@@ -437,11 +423,9 @@ export default function App() {
               Todavía no tenés grupos.<br />¡Creá el primero!
             </div>
           )}
-
           {grupos.sort((a, b) => a.creadoEn - b.creadoEn).map(grupo => (
             <GrupoCard key={grupo.id} grupo={grupo} usuarioUid={usuario.uid} onAbrir={abrirGrupo} onEliminar={eliminarGrupo} db={db} />
           ))}
-
           {mostrarFormGrupo && (
             <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: 16, padding: "20px", marginBottom: 12, border: "1px solid rgba(255,255,255,0.1)" }}>
               <div style={{ fontSize: 13, marginBottom: 12, opacity: 0.7 }}>¿Con quién compartís gastos?</div>
@@ -456,7 +440,6 @@ export default function App() {
               </div>
             </div>
           )}
-
           {!mostrarFormGrupo && (
             <button onClick={() => setMostrarFormGrupo(true)} style={{ width: "100%", padding: "16px", borderRadius: 14, background: "rgba(255,255,255,0.06)", border: "2px dashed rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.6)", cursor: "pointer", fontSize: 15, marginTop: grupos.length > 0 ? 4 : 0, fontFamily: "'Georgia', serif" }}>+ Nuevo grupo</button>
           )}
@@ -471,7 +454,7 @@ export default function App() {
             borderRadius: 20, padding: "24px 24px 20px", marginBottom: 20, boxShadow: "0 8px 32px rgba(0,0,0,0.4)", textAlign: "center",
           }}>
             <div style={{ fontSize: 12, letterSpacing: 3, textTransform: "uppercase", opacity: 0.8, marginBottom: 8 }}>balance con {nombreGrupo}</div>
-            <div style={{ fontSize: 42, fontWeight: "bold", marginBottom: 4 }}>${Math.abs(balance).toFixed(2)}</div>
+            <div style={{ fontSize: 42, fontWeight: "bold", marginBottom: 4 }}>${formatMonto(Math.abs(balance))}</div>
             <div style={{ fontSize: 15, opacity: 0.9 }}>
               {balance === 0 ? "✨ Están a mano" : balance > 0 ? `👉 ${nombreGrupo} te debe a vos` : `👉 Vos le debés a ${nombreGrupo}`}
             </div>
@@ -547,7 +530,7 @@ export default function App() {
 
             {form.monto && !isNaN(form.monto) && Number(form.monto) > 0 && (
               <div style={{ background: "rgba(255,117,140,0.1)", borderRadius: 12, padding: "12px 16px", marginBottom: 16, fontSize: 13, border: "1px solid rgba(255,117,140,0.2)" }}>
-                💡 {MODOS.find(m => m.id === form.modo)?.label}: <strong>${(form.modo.includes("mitad") ? Number(form.monto) / 2 : Number(form.monto)).toFixed(2)}</strong>
+                💡 {MODOS.find(m => m.id === form.modo)?.label}: <strong>${formatMonto(form.modo.includes("mitad") ? Number(form.monto) / 2 : Number(form.monto))}</strong>
               </div>
             )}
 
@@ -615,7 +598,7 @@ function GrupoCard({ grupo, usuarioUid, onAbrir, onEliminar, db }) {
           <div style={{ fontSize: 17, fontWeight: "bold" }}>{grupo.nombre}</div>
           <div style={{ fontSize: 12, opacity: 0.5, marginTop: 2 }}>
             {cantGastos === 0 ? "Sin gastos" : `${cantGastos} gasto${cantGastos !== 1 ? "s" : ""}`}
-            {balance !== 0 && <span style={{ color: balance > 0 ? "#fb7185" : "#a78bfa", marginLeft: 6 }}>· {balance > 0 ? `te debe $${balance.toFixed(2)}` : `le debés $${Math.abs(balance).toFixed(2)}`}</span>}
+            {balance !== 0 && <span style={{ color: balance > 0 ? "#fb7185" : "#a78bfa", marginLeft: 6 }}>· {balance > 0 ? `te debe $${formatMonto(balance)}` : `le debés $${formatMonto(Math.abs(balance))}`}</span>}
             {balance === 0 && cantGastos > 0 && <span style={{ color: "#2ec4b6", marginLeft: 6 }}>· a mano ✨</span>}
           </div>
         </div>
@@ -644,8 +627,8 @@ function GastoRow({ g, catEmoji, nombreGrupo, miUid, onEliminar }) {
         </div>
       </div>
       <div style={{ textAlign: "right" }}>
-        <div style={{ fontSize: 16, fontWeight: "bold", color }}>{signo}${monto.toFixed(2)}</div>
-        <div style={{ fontSize: 10, opacity: 0.4 }}>total: ${g.monto.toFixed(2)}</div>
+        <div style={{ fontSize: 16, fontWeight: "bold", color }}>{signo}${formatMonto(monto)}</div>
+        <div style={{ fontSize: 10, opacity: 0.4 }}>total: ${formatMonto(g.monto)}</div>
       </div>
       <button onClick={() => onEliminar(g.id)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.25)", cursor: "pointer", fontSize: 18, padding: "4px", borderRadius: 8 }}>×</button>
     </div>
