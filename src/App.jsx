@@ -331,7 +331,7 @@ export default function App() {
         cargadoPorNombre: usuarioData?.nombre || "",
       });
       setForm({ descripcion: "", categoria: "comida", monto: "", modo: "pague_yo_mitad" });
-      const snap = await getDocs(query(collection(db, "gastos"), where("grupoId", "==", grupoActivo.id), orderBy("timestamp", "desc")));
+      const snap = await getDocs(query(collection(db, "gastos"), where("grupoId", "==", grupoActivo.id)));
       setGastos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       mostrarToast("¡Gasto cargado! 🎉");
       setVista("inicio");
