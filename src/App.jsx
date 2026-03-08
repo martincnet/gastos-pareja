@@ -332,6 +332,7 @@ export default function App() {
       });
       setForm({ descripcion: "", categoria: "comida", monto: "", modo: "pague_yo_mitad" });
       mostrarToast("¡Gasto cargado! 🎉");
+      setGrupoActivo({ ...grupoActivo });
       setVista("inicio");
     } catch {
       mostrarToast("Error al guardar 😥", "err");
