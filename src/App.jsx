@@ -344,6 +344,8 @@ export default function App() {
   const eliminarGasto = async (id) => {
     try {
       await deleteDoc(doc(db, "gastos", id));
+      const snap = await getDocs(query(collection(db, "gastos"), where("grupoId", "==", grupoActivo.id)));
+      setGastos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       mostrarToast("Gasto eliminado", "err");
     } catch {
       mostrarToast("Error al eliminar 😥", "err");
