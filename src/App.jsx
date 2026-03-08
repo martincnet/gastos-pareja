@@ -257,7 +257,7 @@ export default function App() {
       setGastos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
     return () => unsub();
-  }, [grupoActivo]);
+  }, [grupoActivo?.id]);
 
   const mostrarToast = (msg, tipo = "ok") => {
     setToast({ msg, tipo });
