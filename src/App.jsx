@@ -2,10 +2,15 @@ import { useState, useEffect } from "react";
 import { initializeApp } from "firebase/app";
 import {
   getFirestore, collection, addDoc, deleteDoc,
-  doc, onSnapshot, query, orderBy, writeBatch, getDocs, setDoc, where
+  doc, onSnapshot, query, orderBy, writeBatch,
+  getDocs, where, setDoc, getDoc
 } from "firebase/firestore";
+import {
+  getAuth, createUserWithEmailAndPassword,
+  signInWithEmailAndPassword, signOut, onAuthStateChanged
+} from "firebase/auth";
 
-// ⚠️ REEMPLAZÁ CON TUS CREDENCIALES DE FIREBASE (las mismas que ya tenés)
+// ⚠️ REEMPLAZÁ CON TUS CREDENCIALES DE FIREBASE
 const firebaseConfig = {
   apiKey: "AIzaSyBbN60YgAm7HHcdIO2az43g2PhZsUS2CNA",
   authDomain: "gastos-pareja-a2a0b.firebaseapp.com",
@@ -17,6 +22,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
 const CATEGORIAS = [
   { id: "comida", label: "Comida", emoji: "🍕" },
@@ -37,8 +43,6 @@ const COLORES_GRUPO = [
   "linear-gradient(135deg, #f7971e, #ffd200)",
   "linear-gradient(135deg, #56ab2f, #a8e063)",
   "linear-gradient(135deg, #ee0979, #ff6a00)",
-  "linear-gradient(135deg, #4776e6, #8e54e9)",
-  "linear-gradient(135deg, #11998e, #38ef7d)",
 ];
 
 function getModoLabel(modo, nombre) {
@@ -62,37 +66,153 @@ function calcularBalance(gastos) {
   return balance;
 }
 
+function AuthScreen() {
+  const [modo, setModo] = useState("login");
+  const [nombre, setNombre] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState("");
+
+  const traducirError = (code) => {
+    switch (code) {
+      case "auth/email-already-in-use": return "Ese email ya está registrado";
+      case "auth/invalid-email": return "El email no es válido";
+      case "auth/weak-password": return "La contraseña debe tener al menos 6 caracteres";
+      case "auth/user-not-found": return "No existe cuenta con ese email";
+      case "auth/wrong-password": return "Contraseña incorrecta";
+      case "auth/invalid-credential": return "Email o contraseña incorrectos";
+      default: return "Ocurrió un error, intentá de nuevo";
+    }
+  };
+
+  const handleSubmit = async () => {
+    setError("");
+    if (!email.trim() || !password.trim()) return setError("Completá todos los campos");
+    if (modo === "registro" && !nombre.trim()) return setError("Poné tu nombre");
+    setCargando(true);
+    try {
+      if (modo === "registro") {
+        const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+        await setDoc(doc(db, "usuarios", cred.user.uid), {
+          nombre: nombre.trim(),
+          email: email.trim().toLowerCase(),
+          uid: cred.user.uid,
+          creadoEn: Date.now(),
+        });
+      } else {
+        await signInWithEmailAndPassword(auth, email.trim(), password);
+      }
+    } catch (e) {
+      setError(traducirError(e.code));
+    }
+    setCargando(false);
+  };
+
+  return (
+    <div style={{
+      minHeight: "100vh", background: "#0a0a0f",
+      display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center",
+      padding: "20px", fontFamily: "'Georgia', serif", color: "#f0ece8",
+    }}>
+      <div style={{ position: "fixed", top: -100, right: -100, width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,100,130,0.1), transparent 70%)", pointerEvents: "none" }} />
+      <div style={{ position: "fixed", bottom: -80, left: -80, width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle, rgba(100,150,255,0.08), transparent 70%)", pointerEvents: "none" }} />
+
+      <div style={{ textAlign: "center", marginBottom: 32 }}>
+        <div style={{ fontSize: 48, marginBottom: 12 }}>💸</div>
+        <h1 style={{ fontSize: 28, fontWeight: "normal", margin: 0 }}>SplitEasy</h1>
+        <div style={{ fontSize: 13, opacity: 0.5, marginTop: 6 }}>Dividí gastos sin drama</div>
+      </div>
+
+      <div style={{ width: "100%", maxWidth: 380, background: "rgba(255,255,255,0.05)", borderRadius: 20, padding: "28px 24px", border: "1px solid rgba(255,255,255,0.1)" }}>
+        <div style={{ display: "flex", background: "rgba(255,255,255,0.07)", borderRadius: 12, padding: 4, marginBottom: 24 }}>
+          {["login", "registro"].map(m => (
+            <button key={m} onClick={() => { setModo(m); setError(""); }} style={{
+              flex: 1, padding: "10px", borderRadius: 10, border: "none",
+              background: modo === m ? "rgba(255,117,140,0.3)" : "transparent",
+              color: modo === m ? "#ff758c" : "rgba(255,255,255,0.5)",
+              cursor: "pointer", fontSize: 14, fontWeight: modo === m ? "bold" : "normal",
+              fontFamily: "'Georgia', serif",
+            }}>
+              {m === "login" ? "Ingresar" : "Registrarse"}
+            </button>
+          ))}
+        </div>
+
+        {modo === "registro" && (
+          <>
+            <label style={labelStyle}>Tu nombre</label>
+            <input placeholder="Ej: Martín" value={nombre} onChange={e => setNombre(e.target.value)} style={inputStyle} />
+          </>
+        )}
+
+        <label style={labelStyle}>Email</label>
+        <input placeholder="tu@email.com" type="email" value={email} onChange={e => setEmail(e.target.value)} style={inputStyle} />
+
+        <label style={labelStyle}>Contraseña</label>
+        <input placeholder={modo === "registro" ? "Mínimo 6 caracteres" : "Tu contraseña"} type="password"
+          value={password} onChange={e => setPassword(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && handleSubmit()}
+          style={{ ...inputStyle, marginBottom: error ? 8 : 20 }} />
+
+        {error && <div style={{ color: "#ff4d6d", fontSize: 13, marginBottom: 16, textAlign: "center" }}>{error}</div>}
+
+        <button onClick={handleSubmit} disabled={cargando} style={{
+          width: "100%", padding: "16px", borderRadius: 14, border: "none",
+          background: cargando ? "rgba(255,117,140,0.4)" : "linear-gradient(135deg, #ff758c, #ff4d6d)",
+          color: "#fff", fontSize: 16, fontWeight: "bold", cursor: cargando ? "not-allowed" : "pointer",
+          fontFamily: "'Georgia', serif",
+        }}>
+          {cargando ? "Cargando..." : modo === "login" ? "Ingresar 🚀" : "Crear cuenta ✨"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
+  const [usuario, setUsuario] = useState(null);
+  const [usuarioData, setUsuarioData] = useState(null);
+  const [authListo, setAuthListo] = useState(false);
   const [grupos, setGrupos] = useState([]);
   const [grupoActivo, setGrupoActivo] = useState(null);
   const [gastos, setGastos] = useState([]);
-  const [cargando, setCargando] = useState(true);
-  const [vista, setVista] = useState("grupos"); // grupos | inicio | nuevo | historial
+  const [vista, setVista] = useState("grupos");
   const [form, setForm] = useState({ descripcion: "", categoria: "comida", monto: "", modo: "yo_pague_mitad" });
   const [toast, setToast] = useState(null);
   const [filtro, setFiltro] = useState("todos");
   const [guardando, setGuardando] = useState(false);
   const [nuevoGrupoNombre, setNuevoGrupoNombre] = useState("");
+  const [nuevoGrupoEmail, setNuevoGrupoEmail] = useState("");
   const [mostrarFormGrupo, setMostrarFormGrupo] = useState(false);
 
-  // Cargar grupos
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, "grupos"), (snap) => {
-      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setGrupos(data);
-      setCargando(false);
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      setUsuario(user);
+      if (user) {
+        const snap = await getDoc(doc(db, "usuarios", user.uid));
+        if (snap.exists()) setUsuarioData(snap.data());
+      } else {
+        setUsuarioData(null);
+      }
+      setAuthListo(true);
     });
     return () => unsub();
   }, []);
 
-  // Cargar gastos del grupo activo
+  useEffect(() => {
+    if (!usuario) return;
+    const q = query(collection(db, "grupos"), where("miembros", "array-contains", usuario.uid));
+    const unsub = onSnapshot(q, (snap) => {
+      setGrupos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return () => unsub();
+  }, [usuario]);
+
   useEffect(() => {
     if (!grupoActivo) return;
-    const q = query(
-      collection(db, "gastos"),
-      where("grupoId", "==", grupoActivo.id),
-      orderBy("timestamp", "desc")
-    );
+    const q = query(collection(db, "gastos"), where("grupoId", "==", grupoActivo.id), orderBy("timestamp", "desc"));
     const unsub = onSnapshot(q, (snap) => {
       setGastos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
@@ -106,18 +226,32 @@ export default function App() {
 
   const crearGrupo = async () => {
     const nombre = nuevoGrupoNombre.trim();
+    const emailOtro = nuevoGrupoEmail.trim().toLowerCase();
     if (!nombre) return mostrarToast("Poné un nombre 😅", "err");
-    if (grupos.some(g => g.nombre.toLowerCase() === nombre.toLowerCase()))
-      return mostrarToast("Ya existe ese grupo 😅", "err");
+    if (!emailOtro) return mostrarToast("Poné el email de la otra persona 😅", "err");
+    if (emailOtro === usuario.email.toLowerCase()) return mostrarToast("No podés invitarte a vos mismo 😅", "err");
     setGuardando(true);
     try {
+      const q = query(collection(db, "usuarios"), where("email", "==", emailOtro));
+      const snap = await getDocs(q);
+      let otroUid = null;
+      let otroNombre = emailOtro;
+      if (!snap.empty) {
+        otroUid = snap.docs[0].data().uid;
+        otroNombre = snap.docs[0].data().nombre;
+      }
       const colorIdx = grupos.length % COLORES_GRUPO.length;
       await addDoc(collection(db, "grupos"), {
         nombre,
         color: COLORES_GRUPO[colorIdx],
         creadoEn: Date.now(),
+        creadoPor: usuario.uid,
+        miembros: otroUid ? [usuario.uid, otroUid] : [usuario.uid],
+        emailsInvitados: [usuario.email.toLowerCase(), emailOtro],
+        nombreOtro: otroNombre,
       });
       setNuevoGrupoNombre("");
+      setNuevoGrupoEmail("");
       setMostrarFormGrupo(false);
       mostrarToast(`Grupo "${nombre}" creado! 🎉`);
     } catch {
@@ -129,7 +263,6 @@ export default function App() {
   const eliminarGrupo = async (grupo) => {
     if (!confirm(`¿Eliminar el grupo "${grupo.nombre}" y todos sus gastos?`)) return;
     try {
-      // Eliminar gastos del grupo
       const snap = await getDocs(query(collection(db, "gastos"), where("grupoId", "==", grupo.id)));
       const batch = writeBatch(db);
       snap.docs.forEach(d => batch.delete(d.ref));
@@ -155,6 +288,8 @@ export default function App() {
         fecha: new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" }),
         hora: new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
         timestamp: Date.now(),
+        cargadoPor: usuario.uid,
+        cargadoPorNombre: usuarioData?.nombre || "Vos",
       });
       setForm({ descripcion: "", categoria: "comida", monto: "", modo: "yo_pague_mitad" });
       mostrarToast("¡Gasto cargado! 🎉");
@@ -199,75 +334,79 @@ export default function App() {
     setVista("grupos");
   };
 
-  const balance = calcularBalance(gastos);
-  const gastosFiltrados = filtro === "todos" ? gastos : gastos.filter(g => g.categoria === filtro);
-  const catEmoji = (id) => CATEGORIAS.find(c => c.id === id)?.emoji || "📦";
-  const nombre = grupoActivo?.nombre || "";
+  const cerrarSesion = async () => {
+    if (confirm("¿Querés cerrar sesión?")) {
+      await signOut(auth);
+      setVista("grupos");
+      setGrupoActivo(null);
+    }
+  };
 
-  if (cargando) return (
+  if (!authListo) return (
     <div style={{ minHeight: "100vh", background: "#0a0a0f", display: "flex", alignItems: "center", justifyContent: "center", color: "#f0ece8", flexDirection: "column", gap: 16 }}>
       <div style={{ fontSize: 40 }}>💸</div>
       <div style={{ fontSize: 14, opacity: 0.6, letterSpacing: 2 }}>CARGANDO...</div>
     </div>
   );
 
+  if (!usuario) return <AuthScreen />;
+
+  const balance = calcularBalance(gastos);
+  const gastosFiltrados = filtro === "todos" ? gastos : gastos.filter(g => g.categoria === filtro);
+  const catEmoji = (id) => CATEGORIAS.find(c => c.id === id)?.emoji || "📦";
+  const nombre = grupoActivo?.nombre || "";
+
   return (
     <div style={{
-      minHeight: "100vh",
-      background: "#0a0a0f",
-      fontFamily: "'Georgia', serif",
-      color: "#f0ece8",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      padding: "0 0 80px 0",
-      position: "relative",
+      minHeight: "100vh", background: "#0a0a0f",
+      fontFamily: "'Georgia', serif", color: "#f0ece8",
+      display: "flex", flexDirection: "column", alignItems: "center",
+      padding: "0 0 80px 0", position: "relative",
     }}>
-      {/* BG decoration */}
       <div style={{ position: "fixed", top: -100, right: -100, width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,100,130,0.1), transparent 70%)", pointerEvents: "none" }} />
       <div style={{ position: "fixed", bottom: -80, left: -80, width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle, rgba(100,150,255,0.08), transparent 70%)", pointerEvents: "none" }} />
 
-      {/* Toast */}
       {toast && (
         <div style={{
           position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)",
           background: toast.tipo === "err" ? "#ff4d6d" : "#2ec4b6",
           color: "#fff", padding: "10px 22px", borderRadius: 30,
           fontWeight: "bold", fontSize: 14, zIndex: 999,
-          boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
-          whiteSpace: "nowrap",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.4)", whiteSpace: "nowrap",
         }}>
           {toast.msg}
         </div>
       )}
 
-      {/* Header */}
-      <div style={{ width: "100%", maxWidth: 420, padding: "36px 20px 0", textAlign: "center" }}>
+      <div style={{ width: "100%", maxWidth: 420, padding: "36px 20px 0" }}>
         {vista === "grupos" ? (
-          <>
-            <div style={{ fontSize: 11, letterSpacing: 4, textTransform: "uppercase", color: "rgba(255,180,200,0.6)", marginBottom: 8 }}>mis gastos</div>
-            <h1 style={{ fontSize: 32, fontWeight: "normal", margin: 0, color: "#fff" }}>
-              💸 SplitEasy
-            </h1>
-            <div style={{ fontSize: 11, color: "rgba(46,196,182,0.7)", marginTop: 6, letterSpacing: 1 }}>🟢 sincronizado en tiempo real</div>
-          </>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div>
+              <div style={{ fontSize: 11, letterSpacing: 4, textTransform: "uppercase", color: "rgba(255,180,200,0.6)", marginBottom: 4 }}>hola,</div>
+              <h1 style={{ fontSize: 28, fontWeight: "normal", margin: 0, color: "#fff" }}>
+                {usuarioData?.nombre || "bienvenido"} 👋
+              </h1>
+              <div style={{ fontSize: 11, color: "rgba(46,196,182,0.7)", marginTop: 4, letterSpacing: 1 }}>🟢 sincronizado</div>
+            </div>
+            <button onClick={cerrarSesion} style={{
+              background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)",
+              color: "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: 12,
+              padding: "8px 14px", borderRadius: 10, fontFamily: "'Georgia', serif",
+            }}>Salir</button>
+          </div>
         ) : (
-          <>
+          <div style={{ textAlign: "center" }}>
             <button onClick={volverAGrupos} style={{ background: "none", border: "none", color: "rgba(255,180,200,0.7)", cursor: "pointer", fontSize: 13, marginBottom: 8, padding: 0, display: "block", margin: "0 auto 8px" }}>
               ← Todos los grupos
             </button>
-            <h1 style={{ fontSize: 28, fontWeight: "normal", margin: 0, color: "#fff" }}>
-              {nombre}
-            </h1>
-          </>
+            <h1 style={{ fontSize: 28, fontWeight: "normal", margin: 0, color: "#fff" }}>{nombre}</h1>
+          </div>
         )}
         <div style={{ height: 1, background: "linear-gradient(90deg, transparent, rgba(255,180,200,0.3), transparent)", margin: "16px 0" }} />
       </div>
 
-      {/* VISTA: GRUPOS */}
       {vista === "grupos" && (
         <div style={{ width: "100%", maxWidth: 420, padding: "0 20px" }}>
-
           {grupos.length === 0 && !mostrarFormGrupo && (
             <div style={{ textAlign: "center", opacity: 0.4, padding: "40px 0", fontSize: 14 }}>
               <div style={{ fontSize: 40, marginBottom: 10 }}>👥</div>
@@ -275,40 +414,29 @@ export default function App() {
             </div>
           )}
 
-          {grupos.sort((a, b) => a.creadoEn - b.creadoEn).map((grupo, i) => {
-            return (
-              <GrupoCard key={grupo.id} grupo={grupo} onAbrir={abrirGrupo} onEliminar={eliminarGrupo} db={db} />
-            );
-          })}
+          {grupos.sort((a, b) => a.creadoEn - b.creadoEn).map(grupo => (
+            <GrupoCard key={grupo.id} grupo={grupo} usuarioUid={usuario.uid} onAbrir={abrirGrupo} onEliminar={eliminarGrupo} db={db} />
+          ))}
 
-          {/* Form nuevo grupo */}
           {mostrarFormGrupo && (
             <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: 16, padding: "20px", marginBottom: 12, border: "1px solid rgba(255,255,255,0.1)" }}>
               <div style={{ fontSize: 13, marginBottom: 12, opacity: 0.7 }}>¿Con quién compartís gastos?</div>
-              <input
-                placeholder="Ej: Ailén, Juan, Mamá..."
-                value={nuevoGrupoNombre}
-                onChange={e => setNuevoGrupoNombre(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && crearGrupo()}
-                autoFocus
-                style={{
-                  width: "100%", padding: "12px 14px", borderRadius: 12,
-                  background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.15)",
-                  color: "#f0ece8", fontSize: 16, marginBottom: 12, boxSizing: "border-box",
-                }}
-              />
+              <label style={labelStyle}>Nombre del grupo</label>
+              <input placeholder="Ej: Ailén, Juan..." value={nuevoGrupoNombre} onChange={e => setNuevoGrupoNombre(e.target.value)} style={inputStyle} />
+              <label style={labelStyle}>Email de la otra persona</label>
+              <input placeholder="su@email.com" type="email" value={nuevoGrupoEmail} onChange={e => setNuevoGrupoEmail(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && crearGrupo()} style={inputStyle} />
+              <div style={{ fontSize: 11, opacity: 0.4, marginTop: -12, marginBottom: 16 }}>La otra persona tiene que estar registrada en la app</div>
               <div style={{ display: "flex", gap: 10 }}>
-                <button onClick={() => { setMostrarFormGrupo(false); setNuevoGrupoNombre(""); }} style={{
+                <button onClick={() => { setMostrarFormGrupo(false); setNuevoGrupoNombre(""); setNuevoGrupoEmail(""); }} style={{
                   flex: 1, padding: "12px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.15)",
-                  background: "transparent", color: "#f0ece8", cursor: "pointer", fontSize: 14,
+                  background: "transparent", color: "#f0ece8", cursor: "pointer", fontSize: 14, fontFamily: "'Georgia', serif",
                 }}>Cancelar</button>
                 <button onClick={crearGrupo} disabled={guardando} style={{
                   flex: 2, padding: "12px", borderRadius: 12, border: "none",
                   background: "linear-gradient(135deg, #ff758c, #ff4d6d)",
-                  color: "#fff", cursor: "pointer", fontSize: 14, fontWeight: "bold",
-                }}>
-                  {guardando ? "Creando..." : "Crear grupo ✨"}
-                </button>
+                  color: "#fff", cursor: "pointer", fontSize: 14, fontWeight: "bold", fontFamily: "'Georgia', serif",
+                }}>{guardando ? "Creando..." : "Crear grupo ✨"}</button>
               </div>
             </div>
           )}
@@ -316,29 +444,19 @@ export default function App() {
           {!mostrarFormGrupo && (
             <button onClick={() => setMostrarFormGrupo(true)} style={{
               width: "100%", padding: "16px", borderRadius: 14,
-              background: "rgba(255,255,255,0.06)",
-              border: "2px dashed rgba(255,255,255,0.15)",
+              background: "rgba(255,255,255,0.06)", border: "2px dashed rgba(255,255,255,0.15)",
               color: "rgba(255,255,255,0.6)", cursor: "pointer", fontSize: 15,
-              marginTop: grupos.length > 0 ? 4 : 0,
-            }}>
-              + Nuevo grupo
-            </button>
+              marginTop: grupos.length > 0 ? 4 : 0, fontFamily: "'Georgia', serif",
+            }}>+ Nuevo grupo</button>
           )}
         </div>
       )}
 
-      {/* VISTA: INICIO GRUPO */}
       {vista === "inicio" && grupoActivo && (
         <div style={{ width: "100%", maxWidth: 420, padding: "0 20px" }}>
           <div style={{
-            background: balance === 0
-              ? "linear-gradient(135deg, #2ec4b6, #1a8a84)"
-              : balance > 0
-                ? "linear-gradient(135deg, #ff758c, #ff4d6d)"
-                : "linear-gradient(135deg, #667eea, #764ba2)",
-            borderRadius: 20, padding: "24px 24px 20px",
-            marginBottom: 20, boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
-            textAlign: "center",
+            background: balance === 0 ? "linear-gradient(135deg, #2ec4b6, #1a8a84)" : balance > 0 ? "linear-gradient(135deg, #ff758c, #ff4d6d)" : "linear-gradient(135deg, #667eea, #764ba2)",
+            borderRadius: 20, padding: "24px 24px 20px", marginBottom: 20, boxShadow: "0 8px 32px rgba(0,0,0,0.4)", textAlign: "center",
           }}>
             <div style={{ fontSize: 12, letterSpacing: 3, textTransform: "uppercase", opacity: 0.8, marginBottom: 8 }}>balance con {nombre}</div>
             <div style={{ fontSize: 42, fontWeight: "bold", marginBottom: 4 }}>${Math.abs(balance).toFixed(2)}</div>
@@ -357,7 +475,7 @@ export default function App() {
               <button key={btn.label} onClick={btn.action} style={{
                 background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)",
                 borderRadius: 14, padding: "16px 8px", color: "#f0ece8", cursor: "pointer",
-                display: "flex", flexDirection: "column", alignItems: "center", gap: 6, fontSize: 12,
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 6, fontSize: 12, fontFamily: "'Georgia', serif",
               }}
                 onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.14)"}
                 onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.07)"}
@@ -370,7 +488,7 @@ export default function App() {
           {gastos.length > 0 ? (
             <div>
               <div style={{ fontSize: 11, letterSpacing: 3, textTransform: "uppercase", opacity: 0.5, marginBottom: 12 }}>últimos gastos</div>
-              {gastos.slice(0, 4).map(g => <GastoRow key={g.id} g={g} catEmoji={catEmoji} nombre={nombre} onEliminar={eliminarGasto} />)}
+              {gastos.slice(0, 4).map(g => <GastoRow key={g.id} g={g} catEmoji={catEmoji} nombre={nombre} usuarioUid={usuario.uid} onEliminar={eliminarGasto} />)}
               {gastos.length > 4 && (
                 <button onClick={() => setVista("historial")} style={{ background: "none", border: "none", color: "rgba(255,180,200,0.7)", cursor: "pointer", fontSize: 13, padding: "8px 0", width: "100%", textAlign: "center" }}>
                   Ver todos ({gastos.length}) →
@@ -386,12 +504,9 @@ export default function App() {
         </div>
       )}
 
-      {/* VISTA: NUEVO GASTO */}
       {vista === "nuevo" && grupoActivo && (
         <div style={{ width: "100%", maxWidth: 420, padding: "0 20px" }}>
-          <button onClick={() => setVista("inicio")} style={{ background: "none", border: "none", color: "rgba(255,180,200,0.7)", cursor: "pointer", fontSize: 13, marginBottom: 16, padding: 0 }}>
-            ← Volver
-          </button>
+          <button onClick={() => setVista("inicio")} style={{ background: "none", border: "none", color: "rgba(255,180,200,0.7)", cursor: "pointer", fontSize: 13, marginBottom: 16, padding: 0 }}>← Volver</button>
           <div style={{ background: "rgba(255,255,255,0.06)", borderRadius: 20, padding: "24px 20px", border: "1px solid rgba(255,255,255,0.1)" }}>
             <h2 style={{ margin: "0 0 20px", fontSize: 20, fontWeight: "normal" }}>Nuevo gasto con {nombre} ✨</h2>
 
@@ -425,7 +540,7 @@ export default function App() {
                     padding: "12px 16px", borderRadius: 12,
                     border: form.modo === modoId ? "2px solid #ff758c" : "1px solid rgba(255,255,255,0.12)",
                     background: form.modo === modoId ? "rgba(255,117,140,0.15)" : "rgba(255,255,255,0.04)",
-                    color: "#f0ece8", cursor: "pointer", textAlign: "left", display: "flex", gap: 12, alignItems: "center",
+                    color: "#f0ece8", cursor: "pointer", textAlign: "left", display: "flex", gap: 12, alignItems: "center", fontFamily: "'Georgia', serif",
                   }}>
                     <span style={{ fontSize: 22 }}>{m.emoji}</span>
                     <div>
@@ -444,49 +559,31 @@ export default function App() {
             )}
 
             <button onClick={agregarGasto} disabled={guardando} style={{
-              width: "100%", padding: "16px", borderRadius: 14,
+              width: "100%", padding: "16px", borderRadius: 14, border: "none",
               background: guardando ? "rgba(255,117,140,0.4)" : "linear-gradient(135deg, #ff758c, #ff4d6d)",
-              border: "none", color: "#fff", fontSize: 16, fontWeight: "bold",
-              cursor: guardando ? "not-allowed" : "pointer",
-              boxShadow: "0 4px 20px rgba(255,77,109,0.4)",
-            }}>
-              {guardando ? "Guardando..." : "Guardar gasto 💾"}
-            </button>
+              color: "#fff", fontSize: 16, fontWeight: "bold", cursor: guardando ? "not-allowed" : "pointer",
+              boxShadow: "0 4px 20px rgba(255,77,109,0.4)", fontFamily: "'Georgia', serif",
+            }}>{guardando ? "Guardando..." : "Guardar gasto 💾"}</button>
           </div>
         </div>
       )}
 
-      {/* VISTA: HISTORIAL */}
       {vista === "historial" && grupoActivo && (
         <div style={{ width: "100%", maxWidth: 420, padding: "0 20px" }}>
-          <button onClick={() => setVista("inicio")} style={{ background: "none", border: "none", color: "rgba(255,180,200,0.7)", cursor: "pointer", fontSize: 13, marginBottom: 16, padding: 0 }}>
-            ← Volver
-          </button>
+          <button onClick={() => setVista("inicio")} style={{ background: "none", border: "none", color: "rgba(255,180,200,0.7)", cursor: "pointer", fontSize: 13, marginBottom: 16, padding: 0 }}>← Volver</button>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <h2 style={{ margin: 0, fontSize: 20, fontWeight: "normal" }}>Historial con {nombre} 📋</h2>
             <span style={{ fontSize: 12, opacity: 0.5 }}>{gastos.length} gastos</span>
           </div>
-
           <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 12, marginBottom: 16 }}>
-            <button onClick={() => setFiltro("todos")} style={{
-              padding: "6px 14px", borderRadius: 20, whiteSpace: "nowrap",
-              border: filtro === "todos" ? "2px solid #ff758c" : "1px solid rgba(255,255,255,0.2)",
-              background: filtro === "todos" ? "rgba(255,117,140,0.2)" : "transparent",
-              color: "#f0ece8", cursor: "pointer", fontSize: 12,
-            }}>Todos</button>
+            <button onClick={() => setFiltro("todos")} style={{ padding: "6px 14px", borderRadius: 20, whiteSpace: "nowrap", border: filtro === "todos" ? "2px solid #ff758c" : "1px solid rgba(255,255,255,0.2)", background: filtro === "todos" ? "rgba(255,117,140,0.2)" : "transparent", color: "#f0ece8", cursor: "pointer", fontSize: 12 }}>Todos</button>
             {CATEGORIAS.filter(c => gastos.some(g => g.categoria === c.id)).map(c => (
-              <button key={c.id} onClick={() => setFiltro(c.id)} style={{
-                padding: "6px 14px", borderRadius: 20, whiteSpace: "nowrap",
-                border: filtro === c.id ? "2px solid #ff758c" : "1px solid rgba(255,255,255,0.2)",
-                background: filtro === c.id ? "rgba(255,117,140,0.2)" : "transparent",
-                color: "#f0ece8", cursor: "pointer", fontSize: 12,
-              }}>{c.emoji} {c.label}</button>
+              <button key={c.id} onClick={() => setFiltro(c.id)} style={{ padding: "6px 14px", borderRadius: 20, whiteSpace: "nowrap", border: filtro === c.id ? "2px solid #ff758c" : "1px solid rgba(255,255,255,0.2)", background: filtro === c.id ? "rgba(255,117,140,0.2)" : "transparent", color: "#f0ece8", cursor: "pointer", fontSize: 12 }}>{c.emoji} {c.label}</button>
             ))}
           </div>
-
           {gastosFiltrados.length === 0
             ? <div style={{ textAlign: "center", opacity: 0.4, padding: "30px 0", fontSize: 14 }}>No hay gastos en esta categoría</div>
-            : gastosFiltrados.map(g => <GastoRow key={g.id} g={g} catEmoji={catEmoji} nombre={nombre} onEliminar={eliminarGasto} />)
+            : gastosFiltrados.map(g => <GastoRow key={g.id} g={g} catEmoji={catEmoji} nombre={nombre} usuarioUid={usuario.uid} onEliminar={eliminarGasto} />)
           }
         </div>
       )}
@@ -501,8 +598,7 @@ export default function App() {
   );
 }
 
-// Card de grupo en la pantalla principal
-function GrupoCard({ grupo, onAbrir, onEliminar, db }) {
+function GrupoCard({ grupo, usuarioUid, onAbrir, onEliminar, db }) {
   const [balance, setBalance] = useState(0);
   const [cantGastos, setCantGastos] = useState(0);
 
@@ -516,77 +612,52 @@ function GrupoCard({ grupo, onAbrir, onEliminar, db }) {
     return () => unsub();
   }, [grupo.id]);
 
+  const esMio = grupo.creadoPor === usuarioUid;
+
   return (
-    <div style={{
-      background: "rgba(255,255,255,0.05)",
-      borderRadius: 16, marginBottom: 12,
-      border: "1px solid rgba(255,255,255,0.08)",
-      overflow: "hidden",
-    }}>
+    <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: 16, marginBottom: 12, border: "1px solid rgba(255,255,255,0.08)" }}>
       <div style={{ display: "flex", alignItems: "center", padding: "16px" }}>
-        <div style={{
-          width: 46, height: 46, borderRadius: 14,
-          background: grupo.color, flexShrink: 0,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 20, fontWeight: "bold", color: "#fff",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-        }}>
+        <div style={{ width: 46, height: 46, borderRadius: 14, background: grupo.color, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: "bold", color: "#fff", boxShadow: "0 4px 12px rgba(0,0,0,0.3)" }}>
           {grupo.nombre.charAt(0).toUpperCase()}
         </div>
         <div style={{ flex: 1, marginLeft: 14 }}>
           <div style={{ fontSize: 17, fontWeight: "bold" }}>{grupo.nombre}</div>
           <div style={{ fontSize: 12, opacity: 0.5, marginTop: 2 }}>
             {cantGastos === 0 ? "Sin gastos" : `${cantGastos} gasto${cantGastos !== 1 ? "s" : ""}`}
-            {balance !== 0 && (
-              <span style={{ color: balance > 0 ? "#fb7185" : "#a78bfa", marginLeft: 6 }}>
-                · {balance > 0 ? `te debe $${balance.toFixed(2)}` : `le debés $${Math.abs(balance).toFixed(2)}`}
-              </span>
-            )}
+            {balance !== 0 && <span style={{ color: balance > 0 ? "#fb7185" : "#a78bfa", marginLeft: 6 }}>· {balance > 0 ? `te debe $${balance.toFixed(2)}` : `le debés $${Math.abs(balance).toFixed(2)}`}</span>}
             {balance === 0 && cantGastos > 0 && <span style={{ color: "#2ec4b6", marginLeft: 6 }}>· a mano ✨</span>}
           </div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => onEliminar(grupo)} style={{
-            background: "rgba(255,77,109,0.15)", border: "none", color: "#ff4d6d",
-            cursor: "pointer", fontSize: 16, padding: "8px 10px", borderRadius: 10,
-          }}>🗑</button>
-          <button onClick={() => onAbrir(grupo)} style={{
-            background: grupo.color, border: "none", color: "#fff",
-            cursor: "pointer", fontSize: 13, padding: "8px 14px", borderRadius: 10,
-            fontWeight: "bold",
-          }}>Ver →</button>
+          {esMio && <button onClick={() => onEliminar(grupo)} style={{ background: "rgba(255,77,109,0.15)", border: "none", color: "#ff4d6d", cursor: "pointer", fontSize: 16, padding: "8px 10px", borderRadius: 10 }}>🗑</button>}
+          <button onClick={() => onAbrir(grupo)} style={{ background: grupo.color, border: "none", color: "#fff", cursor: "pointer", fontSize: 13, padding: "8px 14px", borderRadius: 10, fontWeight: "bold", fontFamily: "'Georgia', serif" }}>Ver →</button>
         </div>
       </div>
     </div>
   );
 }
 
-function GastoRow({ g, catEmoji, nombre, onEliminar }) {
+function GastoRow({ g, catEmoji, nombre, usuarioUid, onEliminar }) {
   const modo = getModoLabel(g.modo, nombre);
   const montoMostrado = g.modo.includes("mitad") ? g.monto / 2 : g.monto;
   const esDeuda = g.modo.startsWith("ella");
+  const esMio = g.cargadoPor === usuarioUid;
 
   return (
-    <div style={{
-      background: "rgba(255,255,255,0.05)", borderRadius: 14, padding: "14px 16px",
-      marginBottom: 10, border: "1px solid rgba(255,255,255,0.07)",
-      display: "flex", alignItems: "center", gap: 12,
-    }}>
+    <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: 14, padding: "14px 16px", marginBottom: 10, border: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: 12 }}>
       <div style={{ fontSize: 26 }}>{catEmoji(g.categoria)}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 15, fontWeight: "bold", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{g.descripcion}</div>
-        <div style={{ fontSize: 11, opacity: 0.5, marginTop: 2 }}>{g.fecha} · {g.hora} · {modo.emoji} {modo.label}</div>
+        <div style={{ fontSize: 11, opacity: 0.5, marginTop: 2 }}>
+          {g.fecha} · {g.hora} · {modo.emoji} {modo.label}
+          {g.cargadoPorNombre && <span style={{ marginLeft: 4 }}>· cargó {esMio ? "vos" : g.cargadoPorNombre}</span>}
+        </div>
       </div>
       <div style={{ textAlign: "right" }}>
-        <div style={{ fontSize: 16, fontWeight: "bold", color: esDeuda ? "#a78bfa" : "#fb7185" }}>
-          {esDeuda ? "-" : "+"}${montoMostrado.toFixed(2)}
-        </div>
+        <div style={{ fontSize: 16, fontWeight: "bold", color: esDeuda ? "#a78bfa" : "#fb7185" }}>{esDeuda ? "-" : "+"}${montoMostrado.toFixed(2)}</div>
         <div style={{ fontSize: 10, opacity: 0.4 }}>total: ${g.monto.toFixed(2)}</div>
       </div>
-      <button onClick={() => onEliminar(g.id)} style={{
-        background: "none", border: "none", color: "rgba(255,255,255,0.25)",
-        cursor: "pointer", fontSize: 18, padding: "4px", borderRadius: 8,
-      }}>×</button>
+      <button onClick={() => onEliminar(g.id)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.25)", cursor: "pointer", fontSize: 18, padding: "4px", borderRadius: 8 }}>×</button>
     </div>
   );
 }
@@ -595,6 +666,7 @@ const inputStyle = {
   width: "100%", padding: "12px 14px", borderRadius: 12,
   background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.15)",
   color: "#f0ece8", fontSize: 15, marginBottom: 16, boxSizing: "border-box",
+  fontFamily: "'Georgia', serif",
 };
 
 const labelStyle = {
