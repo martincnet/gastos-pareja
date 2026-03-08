@@ -1,6 +1,22 @@
 import { useState, useEffect } from "react";
+import { initializeApp } from "firebase/app";
+import {
+  getFirestore, collection, addDoc, deleteDoc,
+  doc, onSnapshot, query, orderBy, writeBatch, getDocs
+} from "firebase/firestore";
 
-const STORAGE_KEY = "gastos_pareja";
+// ⚠️ REEMPLAZÁ ESTOS VALORES CON LOS DE TU PROYECTO FIREBASE
+const firebaseConfig = {
+  apiKey: "AIzaSyBbN60YgAm7HHcdIO2az43g2PhZsUS2CNA",
+  authDomain: "gastos-pareja-a2a0b.firebaseapp.com",
+  projectId: "gastos-pareja-a2a0b",
+  storageBucket: "gastos-pareja-a2a0b.firebasestorage.app",
+  messagingSenderId: "1081231883778",
+  appId: "1:1081231883778:web:395365a07c41d562c0311b"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 const CATEGORIAS = [
   { id: "comida", label: "Comida", emoji: "🍕" },
@@ -22,7 +38,7 @@ const MODOS = [
 ];
 
 function calcularBalance(gastos) {
-  let balance = 0; // positivo = Ailén le debe a vos; negativo = vos le debés a Ailén
+  let balance = 0;
   for (const g of gastos) {
     if (g.modo === "yo_pague_total") balance += g.monto;
     else if (g.modo === "yo_pague_mitad") balance += g.monto / 2;
@@ -33,57 +49,89 @@ function calcularBalance(gastos) {
 }
 
 export default function App() {
-  const [gastos, setGastos] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    } catch { return []; }
-  });
-  const [vista, setVista] = useState("inicio"); // inicio | nuevo | historial
+  const [gastos, setGastos] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [vista, setVista] = useState("inicio");
   const [form, setForm] = useState({ descripcion: "", categoria: "comida", monto: "", modo: "yo_pague_mitad" });
   const [toast, setToast] = useState(null);
   const [filtro, setFiltro] = useState("todos");
+  const [guardando, setGuardando] = useState(false);
 
+  // Escuchar cambios en tiempo real desde Firestore
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(gastos));
-  }, [gastos]);
+    const q = query(collection(db, "gastos"), orderBy("timestamp", "desc"));
+    const unsub = onSnapshot(q, (snap) => {
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setGastos(data);
+      setCargando(false);
+    }, (err) => {
+      console.error(err);
+      setCargando(false);
+      mostrarToast("Error de conexión 😥", "err");
+    });
+    return () => unsub();
+  }, []);
 
   const mostrarToast = (msg, tipo = "ok") => {
     setToast({ msg, tipo });
     setTimeout(() => setToast(null), 2500);
   };
 
-  const agregarGasto = () => {
+  const agregarGasto = async () => {
     if (!form.descripcion.trim()) return mostrarToast("Poné una descripción 😅", "err");
     if (!form.monto || isNaN(form.monto) || Number(form.monto) <= 0) return mostrarToast("El monto tiene que ser mayor a 0 💰", "err");
-    const nuevo = {
-      id: Date.now(),
-      descripcion: form.descripcion.trim(),
-      categoria: form.categoria,
-      monto: parseFloat(form.monto),
-      modo: form.modo,
-      fecha: new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" }),
-      hora: new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
-    };
-    setGastos(prev => [nuevo, ...prev]);
-    setForm({ descripcion: "", categoria: "comida", monto: "", modo: "yo_pague_mitad" });
-    mostrarToast("¡Gasto cargado! 🎉");
-    setVista("inicio");
+    setGuardando(true);
+    try {
+      await addDoc(collection(db, "gastos"), {
+        descripcion: form.descripcion.trim(),
+        categoria: form.categoria,
+        monto: parseFloat(form.monto),
+        modo: form.modo,
+        fecha: new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" }),
+        hora: new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
+        timestamp: Date.now(),
+      });
+      setForm({ descripcion: "", categoria: "comida", monto: "", modo: "yo_pague_mitad" });
+      mostrarToast("¡Gasto cargado! 🎉");
+      setVista("inicio");
+    } catch (e) {
+      mostrarToast("Error al guardar 😥", "err");
+    }
+    setGuardando(false);
   };
 
-  const eliminarGasto = (id) => {
-    setGastos(prev => prev.filter(g => g.id !== id));
-    mostrarToast("Gasto eliminado", "err");
+  const eliminarGasto = async (id) => {
+    try {
+      await deleteDoc(doc(db, "gastos", id));
+      mostrarToast("Gasto eliminado", "err");
+    } catch {
+      mostrarToast("Error al eliminar 😥", "err");
+    }
   };
 
-  const saldarCuentas = () => {
-    setGastos([]);
-    mostrarToast("¡Cuentas saldadas! Empiecen de cero 🥂");
+  const saldarCuentas = async () => {
+    try {
+      const snap = await getDocs(collection(db, "gastos"));
+      const batch = writeBatch(db);
+      snap.docs.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+      mostrarToast("¡Cuentas saldadas! Empiecen de cero 🥂");
+    } catch {
+      mostrarToast("Error al saldar 😥", "err");
+    }
   };
 
   const balance = calcularBalance(gastos);
   const gastosFiltrados = filtro === "todos" ? gastos : gastos.filter(g => g.categoria === filtro);
   const catEmoji = (id) => CATEGORIAS.find(c => c.id === id)?.emoji || "📦";
   const modoInfo = (id) => MODOS.find(m => m.id === id);
+
+  if (cargando) return (
+    <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #0f0c29, #302b63, #24243e)", display: "flex", alignItems: "center", justifyContent: "center", color: "#f0ece8", flexDirection: "column", gap: 16 }}>
+      <div style={{ fontSize: 40 }}>💑</div>
+      <div style={{ fontSize: 14, opacity: 0.6, letterSpacing: 2 }}>CARGANDO...</div>
+    </div>
+  );
 
   return (
     <div style={{
@@ -98,11 +146,9 @@ export default function App() {
       position: "relative",
       overflow: "hidden",
     }}>
-      {/* Decorative blobs */}
       <div style={{ position: "fixed", top: -80, right: -80, width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,100,130,0.18), transparent 70%)", pointerEvents: "none" }} />
       <div style={{ position: "fixed", bottom: 0, left: -60, width: 250, height: 250, borderRadius: "50%", background: "radial-gradient(circle, rgba(100,150,255,0.15), transparent 70%)", pointerEvents: "none" }} />
 
-      {/* Toast */}
       {toast && (
         <div style={{
           position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)",
@@ -122,6 +168,10 @@ export default function App() {
         <h1 style={{ fontSize: 34, fontWeight: "normal", margin: 0, letterSpacing: 1, color: "#fff", textShadow: "0 0 30px rgba(255,100,130,0.4)" }}>
           💑 Ailén &amp; Vos
         </h1>
+        {/* Indicador de sincronización */}
+        <div style={{ fontSize: 11, color: "rgba(46,196,182,0.8)", marginTop: 6, letterSpacing: 1 }}>
+          🟢 sincronizado en tiempo real
+        </div>
         <div style={{ height: 1, background: "linear-gradient(90deg, transparent, rgba(255,180,200,0.5), transparent)", margin: "16px 0" }} />
       </div>
 
@@ -140,40 +190,30 @@ export default function App() {
             boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
             textAlign: "center",
           }}>
-            <div style={{ fontSize: 12, letterSpacing: 3, textTransform: "uppercase", opacity: 0.8, marginBottom: 8 }}>
-              balance actual
-            </div>
+            <div style={{ fontSize: 12, letterSpacing: 3, textTransform: "uppercase", opacity: 0.8, marginBottom: 8 }}>balance actual</div>
             <div style={{ fontSize: 42, fontWeight: "bold", marginBottom: 4 }}>
               ${Math.abs(balance).toFixed(2)}
             </div>
             <div style={{ fontSize: 15, opacity: 0.9 }}>
-              {balance === 0
-                ? "✨ Están a mano"
-                : balance > 0
-                  ? "👉 Ailén te debe a vos"
-                  : "👉 Vos le debés a Ailén"}
+              {balance === 0 ? "✨ Están a mano" : balance > 0 ? "👉 Ailén te debe a vos" : "👉 Vos le debés a Ailén"}
             </div>
             {gastos.length > 0 && (
               <div style={{ fontSize: 12, opacity: 0.7, marginTop: 6 }}>{gastos.length} gasto{gastos.length !== 1 ? "s" : ""} cargado{gastos.length !== 1 ? "s" : ""}</div>
             )}
           </div>
 
-          {/* Quick actions */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
             {[
-              { label: "Nuevo gasto", icon: "➕", action: () => setVista("nuevo"), color: "#ff758c" },
-              { label: "Historial", icon: "📋", action: () => setVista("historial"), color: "#667eea" },
-              { label: "Saldar", icon: "🤝", action: () => { if (gastos.length > 0 && confirm("¿Confirman que saldaron las cuentas?")) saldarCuentas(); }, color: "#2ec4b6" },
+              { label: "Nuevo gasto", icon: "➕", action: () => setVista("nuevo") },
+              { label: "Historial", icon: "📋", action: () => setVista("historial") },
+              { label: "Saldar", icon: "🤝", action: () => { if (gastos.length > 0 && confirm("¿Confirman que saldaron las cuentas?")) saldarCuentas(); } },
             ].map(btn => (
               <button key={btn.label} onClick={btn.action} style={{
                 background: "rgba(255,255,255,0.07)",
-                border: `1px solid rgba(255,255,255,0.12)`,
-                borderRadius: 14,
-                padding: "16px 8px",
-                color: "#f0ece8",
-                cursor: "pointer",
-                display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-                fontSize: 12,
+                border: "1px solid rgba(255,255,255,0.12)",
+                borderRadius: 14, padding: "16px 8px",
+                color: "#f0ece8", cursor: "pointer",
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 6, fontSize: 12,
                 transition: "all 0.2s",
               }}
                 onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.14)"}
@@ -185,7 +225,6 @@ export default function App() {
             ))}
           </div>
 
-          {/* Últimos gastos */}
           {gastos.length > 0 && (
             <div>
               <div style={{ fontSize: 11, letterSpacing: 3, textTransform: "uppercase", opacity: 0.5, marginBottom: 12 }}>últimos gastos</div>
@@ -230,8 +269,7 @@ export default function App() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 16 }}>
               {CATEGORIAS.map(c => (
                 <button key={c.id} onClick={() => setForm(f => ({ ...f, categoria: c.id }))} style={{
-                  padding: "10px 6px",
-                  borderRadius: 12,
+                  padding: "10px 6px", borderRadius: 12,
                   border: form.categoria === c.id ? "2px solid #ff758c" : "1px solid rgba(255,255,255,0.12)",
                   background: form.categoria === c.id ? "rgba(255,117,140,0.2)" : "rgba(255,255,255,0.05)",
                   color: "#f0ece8", cursor: "pointer", fontSize: 12, textAlign: "center",
@@ -255,8 +293,7 @@ export default function App() {
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
               {MODOS.map(m => (
                 <button key={m.id} onClick={() => setForm(f => ({ ...f, modo: m.id }))} style={{
-                  padding: "12px 16px",
-                  borderRadius: 12,
+                  padding: "12px 16px", borderRadius: 12,
                   border: form.modo === m.id ? "2px solid #ff758c" : "1px solid rgba(255,255,255,0.12)",
                   background: form.modo === m.id ? "rgba(255,117,140,0.15)" : "rgba(255,255,255,0.04)",
                   color: "#f0ece8", cursor: "pointer", textAlign: "left", display: "flex", gap: 12, alignItems: "center",
@@ -276,14 +313,14 @@ export default function App() {
               </div>
             )}
 
-            <button onClick={agregarGasto} style={{
+            <button onClick={agregarGasto} disabled={guardando} style={{
               width: "100%", padding: "16px", borderRadius: 14,
-              background: "linear-gradient(135deg, #ff758c, #ff4d6d)",
+              background: guardando ? "rgba(255,117,140,0.4)" : "linear-gradient(135deg, #ff758c, #ff4d6d)",
               border: "none", color: "#fff", fontSize: 16, fontWeight: "bold",
-              cursor: "pointer", letterSpacing: 0.5,
+              cursor: guardando ? "not-allowed" : "pointer", letterSpacing: 0.5,
               boxShadow: "0 4px 20px rgba(255,77,109,0.4)",
             }}>
-              Guardar gasto 💾
+              {guardando ? "Guardando..." : "Guardar gasto 💾"}
             </button>
           </div>
         </div>
@@ -300,7 +337,6 @@ export default function App() {
             <span style={{ fontSize: 12, opacity: 0.5 }}>{gastos.length} gastos</span>
           </div>
 
-          {/* Filtro categorias */}
           <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 12, marginBottom: 16 }}>
             <button onClick={() => setFiltro("todos")} style={{
               padding: "6px 14px", borderRadius: 20, whiteSpace: "nowrap",
@@ -363,8 +399,7 @@ function GastoRow({ g, catEmoji, modoInfo, onEliminar }) {
       </div>
       <button onClick={() => onEliminar(g.id)} style={{
         background: "none", border: "none", color: "rgba(255,255,255,0.25)",
-        cursor: "pointer", fontSize: 16, padding: "4px",
-        borderRadius: 8,
+        cursor: "pointer", fontSize: 16, padding: "4px", borderRadius: 8,
       }} title="Eliminar">×</button>
     </div>
   );
