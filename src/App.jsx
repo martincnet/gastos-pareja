@@ -233,6 +233,9 @@ export default function App() {
   const [nuevoGrupoNombre, setNuevoGrupoNombre] = useState("");
   const [nuevoGrupoEmail, setNuevoGrupoEmail] = useState("");
   const [mostrarFormGrupo, setMostrarFormGrupo] = useState(false);
+  const [notifPermiso, setNotifPermiso] = useState(() =>
+    "Notification" in window ? Notification.permission : "denied"
+  );
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
@@ -240,7 +243,6 @@ export default function App() {
       if (user) {
         const snap = await getDoc(doc(db, "usuarios", user.uid));
         if (snap.exists()) setUsuarioData(snap.data());
-        registrarTokenFCM(user.uid);
       } else {
         setUsuarioData(null);
       }
@@ -448,6 +450,14 @@ export default function App() {
       {/* GRUPOS */}
       {vista === "grupos" && (
         <div style={{ width: "100%", maxWidth: 420, padding: "0 20px" }}>
+          {notifPermiso !== "granted" && (
+            <button onClick={async () => {
+              await registrarTokenFCM(usuario.uid);
+              setNotifPermiso("Notification" in window ? Notification.permission : "denied");
+            }} style={{ width: "100%", padding: "12px 16px", borderRadius: 14, border: "1px solid rgba(255,117,140,0.4)", background: "rgba(255,117,140,0.1)", color: "#ff758c", cursor: "pointer", fontSize: 13, marginBottom: 12, fontFamily: "'Georgia', serif", textAlign: "left" }}>
+              🔔 Activar notificaciones push
+            </button>
+          )}
           {grupos.length === 0 && !mostrarFormGrupo && (
             <div style={{ textAlign: "center", opacity: 0.4, padding: "40px 0", fontSize: 14 }}>
               <div style={{ fontSize: 40, marginBottom: 10 }}>👥</div>
