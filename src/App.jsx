@@ -9,6 +9,7 @@ import {
   getAuth, createUserWithEmailAndPassword,
   signInWithEmailAndPassword, signOut, onAuthStateChanged
 } from "firebase/auth";
+import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
 // ⚠️ REEMPLAZÁ CON TUS CREDENCIALES DE FIREBASE
 const firebaseConfig = {
@@ -23,6 +24,26 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+const messaging = getMessaging(app);
+
+// ⚠️ REEMPLAZÁ con tu VAPID key: Firebase Console → Project Settings → Cloud Messaging → Web push certificates
+const VAPID_KEY = "BBEG-L5NZm9-CY3Newy1v1sh_NkxLHMYQYbpoQweSPLoDols4kNNh2eVlS498TQoXKs7EmiiU_B8L7RiHPdIaag";
+
+async function registrarTokenFCM(uid) {
+  try {
+    if (!("Notification" in window)) return;
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") return;
+    const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+    const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: registration });
+    if (token) {
+      await setDoc(doc(db, "fcmTokens", uid), { token, uid, updatedAt: Date.now() }, { merge: true });
+    }
+  } catch (e) {
+    // No bloquear el flujo si las notificaciones no están disponibles
+    console.warn("No se pudo registrar el token FCM:", e);
+  }
+}
 
 const CATEGORIAS = [
   { id: "comida", label: "Comida", emoji: "🍕" },
@@ -219,10 +240,20 @@ export default function App() {
       if (user) {
         const snap = await getDoc(doc(db, "usuarios", user.uid));
         if (snap.exists()) setUsuarioData(snap.data());
+        registrarTokenFCM(user.uid);
       } else {
         setUsuarioData(null);
       }
       setAuthListo(true);
+    });
+    return () => unsub();
+  }, []);
+
+  // Maneja notificaciones cuando la app está abierta (foreground)
+  useEffect(() => {
+    const unsub = onMessage(messaging, (payload) => {
+      const { title, body } = payload.notification;
+      mostrarToast(`${title}: ${body}`, "ok");
     });
     return () => unsub();
   }, []);
