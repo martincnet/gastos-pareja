@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { initializeApp } from "firebase/app";
 import {
   getFirestore, collection, addDoc, deleteDoc,
@@ -379,6 +379,8 @@ export default function App() {
   const [modal, setModal] = useState(null);
   const [cargandoGastos, setCargandoGastos] = useState(false);
   const [gastoEditando, setGastoEditando] = useState(null);
+  const [mesSeleccionado, setMesSeleccionado] = useState(null);
+  const mesPromptRef = useRef(null);
 
   const confirmar = (mensaje, onConfirm) => setModal({ mensaje, onConfirm });
   const cerrarModal = () => setModal(null);
@@ -434,6 +436,25 @@ export default function App() {
     );
     return () => unsub();
   }, [grupoActivo?.id]);
+
+  useEffect(() => {
+    if (cargandoGastos || !grupoActivo) return;
+    const promptKey = grupoActivo.id;
+    if (mesPromptRef.current === promptKey) return;
+    mesPromptRef.current = promptKey;
+    const now = new Date();
+    const mesActual = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const noSaldados = gastos.filter(g => !g.saldadoEn);
+    const tieneViejos = noSaldados.some(g => {
+      const d = new Date(g.timestamp);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}` < mesActual;
+    });
+    if (tieneViejos) {
+      const nombres = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+      const mesNombre = nombres[now.getMonth()];
+      confirmar(`Hay gastos sin saldar de meses anteriores. ¿Saldamos y empezamos ${mesNombre} de cero?`, saldarCuentas);
+    }
+  }, [cargandoGastos, grupoActivo?.id]);
 
   const mostrarToast = (msg, tipo = "ok") => {
     setToast({ msg, tipo });
@@ -590,6 +611,7 @@ export default function App() {
     setFiltro("todos");
     setGastos([]);
     setCargandoGastos(true);
+    setMesSeleccionado(null);
     setVista("inicio");
   };
 
@@ -877,7 +899,38 @@ export default function App() {
             <span style={{ fontSize: 12, color: T.text2 }}>{gastosFiltrados.length}{filtro !== "todos" ? ` de ${gastos.length}` : ""} gastos</span>
           </div>
 
-          {filtro === "todos" && gastosActuales.length >= 1 && <TortaGastos gastos={gastosActuales} />}
+          {filtro === "todos" && gastos.length >= 1 && (() => {
+            const now = new Date();
+            const mesActual = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+            const meses = [...new Set(gastos.map(g => {
+              const d = new Date(g.timestamp);
+              return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+            }))].sort().reverse();
+            const mes = mesSeleccionado && meses.includes(mesSeleccionado) ? mesSeleccionado : (meses.includes(mesActual) ? mesActual : meses[0]);
+            const gastosMes = gastos.filter(g => {
+              const d = new Date(g.timestamp);
+              return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}` === mes;
+            });
+            const NOMBRES_MES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+            const fmtMes = ym => { const [y,m] = ym.split("-"); return `${NOMBRES_MES[+m-1]} ${y}`; };
+            return (
+              <>
+                {meses.length > 1 && (
+                  <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 8, marginBottom: 4 }}>
+                    {meses.map(m => (
+                      <button key={m} onClick={() => setMesSeleccionado(m)} style={{
+                        padding: "6px 14px", borderRadius: 20, whiteSpace: "nowrap", fontSize: 12,
+                        border: mes === m ? `2px solid ${T.accent}` : `1px solid ${T.border}`,
+                        background: mes === m ? "rgba(255,77,109,0.08)" : T.surface,
+                        color: T.text, cursor: "pointer", minHeight: 32, flexShrink: 0,
+                      }}>{fmtMes(m)}</button>
+                    ))}
+                  </div>
+                )}
+                {gastosMes.length >= 1 && <TortaGastos gastos={gastosMes} />}
+              </>
+            );
+          })()}
 
           <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 12, marginBottom: 16 }}>
             <button onClick={() => setFiltro("todos")} style={{ padding: "8px 16px", borderRadius: 20, whiteSpace: "nowrap", border: filtro === "todos" ? `2px solid ${T.accent}` : `1px solid ${T.border}`, background: filtro === "todos" ? "rgba(255,77,109,0.08)" : T.surface, color: T.text, cursor: "pointer", fontSize: 13, minHeight: 36 }}>Todos</button>
