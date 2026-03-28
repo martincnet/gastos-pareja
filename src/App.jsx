@@ -578,6 +578,7 @@ export default function App() {
       const batch = writeBatch(db);
       noSaldados.forEach(g => batch.update(doc(db, "gastos", g.id), { saldadoEn: ahora }));
       await batch.commit();
+      setGastos(prev => prev.map(g => g.saldadoEn ? g : { ...g, saldadoEn: ahora }));
       mostrarToast("Cuentas saldadas. Empiecen de cero");
     } catch {
       mostrarToast("Error al saldar", "err");
