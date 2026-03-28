@@ -35,8 +35,13 @@ service cloud.firestore {
       allow create: if request.auth != null &&
         request.resource.data.cargadoPor == request.auth.uid &&
         request.auth.uid in get(/databases/$(database)/documents/grupos/$(request.resource.data.grupoId)).data.miembros;
-      allow update: if request.auth != null &&
-        request.auth.uid == resource.data.cargadoPor;
+      allow update: if request.auth != null && (
+        // El que cargó puede editar cualquier campo
+        request.auth.uid == resource.data.cargadoPor ||
+        // Cualquier miembro del grupo puede marcar como saldado (solo ese campo)
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['saldadoEn']) &&
+         request.auth.uid in get(/databases/$(database)/documents/grupos/$(resource.data.grupoId)).data.miembros)
+      );
       allow delete: if request.auth != null &&
         request.auth.uid in get(/databases/$(database)/documents/grupos/$(resource.data.grupoId)).data.miembros;
     }

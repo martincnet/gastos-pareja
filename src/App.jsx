@@ -115,6 +115,7 @@ function formatMonto(n) {
 function calcularBalance(gastos, miUid) {
   let balance = 0;
   for (const g of gastos) {
+    if (g.saldadoEn) continue;
     const yoCargue = g.cargadoPor === miUid;
     if (yoCargue) {
       if (g.modo === "pague_yo_total")  balance += g.monto;
@@ -570,12 +571,13 @@ export default function App() {
   };
 
   const saldarCuentas = async () => {
+    const ahora = Date.now();
     try {
-      const snap = await getDocs(query(collection(db, "gastos"), where("grupoId", "==", grupoActivo.id)));
+      const noSaldados = gastos.filter(g => !g.saldadoEn);
+      if (noSaldados.length === 0) return;
       const batch = writeBatch(db);
-      snap.docs.forEach(d => batch.delete(d.ref));
+      noSaldados.forEach(g => batch.update(doc(db, "gastos", g.id), { saldadoEn: ahora }));
       await batch.commit();
-      setGastos([]);
       mostrarToast("Cuentas saldadas. Empiecen de cero");
     } catch {
       mostrarToast("Error al saldar", "err");
@@ -620,6 +622,7 @@ export default function App() {
 
   if (!usuario) return <AuthScreen />;
 
+  const gastosActuales = gastos.filter(g => !g.saldadoEn);
   const balance = calcularBalance(gastos, usuario.uid);
   const gastosFiltrados = filtro === "todos" ? gastos : gastos.filter(g => g.categoria === filtro);
   const catEmoji = (id) => CATEGORIAS.find(c => c.id === id)?.emoji || "📦";
@@ -726,14 +729,14 @@ export default function App() {
             <div style={{ fontSize: 15, color: "rgba(255,255,255,0.9)" }}>
               {balance === 0 ? "Están a mano" : balance > 0 ? `${nombreOtro} te debe a vos` : `Vos le debés a ${nombreOtro}`}
             </div>
-            {gastos.length > 0 && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", marginTop: 6 }}>{gastos.length} gasto{gastos.length !== 1 ? "s" : ""}</div>}
+            {gastosActuales.length > 0 && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", marginTop: 6 }}>{gastosActuales.length} gasto{gastosActuales.length !== 1 ? "s" : ""} este período</div>}
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 20 }}>
             {[
               { label: "Nuevo gasto", icon: "＋", action: () => setVista("nuevo"), disabled: false },
               { label: "Historial",   icon: "≡",  action: () => setVista("historial"), disabled: false },
-              { label: "Saldar",      icon: "✓",  action: () => confirmar(`¿Confirman que saldaron las cuentas con ${nombreOtro}?`, saldarCuentas), disabled: gastos.length === 0 },
+              { label: "Saldar",      icon: "✓",  action: () => confirmar(`¿Confirman que saldaron las cuentas con ${nombreOtro}?`, saldarCuentas), disabled: gastosActuales.length === 0 },
             ].map(btn => (
               <button key={btn.label} onClick={btn.disabled ? undefined : btn.action}
                 style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 16, padding: "18px 8px", color: T.text, cursor: btn.disabled ? "default" : "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, fontSize: 12, fontFamily: "'Georgia', serif", minHeight: 80, opacity: btn.disabled ? 0.35 : 1, boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}
@@ -751,18 +754,18 @@ export default function App() {
               <div style={{ fontSize: 32, marginBottom: 12 }}>⏳</div>
               Cargando...
             </div>
-          ) : gastos.length > 0 ? (
+          ) : gastosActuales.length > 0 ? (
             <div>
               <div style={{ fontSize: 11, letterSpacing: 3, textTransform: "uppercase", color: T.text2, marginBottom: 12 }}>Últimos gastos</div>
-              {gastos.slice(0, 4).map(g => <GastoRow key={g.id} g={g} catEmoji={catEmoji} nombreGrupo={nombreOtro} miUid={usuario.uid} onEliminar={eliminarGasto} onEditar={abrirEditar} />)}
-              {gastos.length > 4 && (
-                <button onClick={() => setVista("historial")} style={{ background: "none", border: "none", color: T.accent2, cursor: "pointer", fontSize: 14, padding: "10px 0", width: "100%", textAlign: "center", minHeight: 44 }}>Ver todos ({gastos.length}) →</button>
+              {gastosActuales.slice(0, 4).map(g => <GastoRow key={g.id} g={g} catEmoji={catEmoji} nombreGrupo={nombreOtro} miUid={usuario.uid} onEliminar={eliminarGasto} onEditar={abrirEditar} />)}
+              {gastosActuales.length > 4 && (
+                <button onClick={() => setVista("historial")} style={{ background: "none", border: "none", color: T.accent2, cursor: "pointer", fontSize: 14, padding: "10px 0", width: "100%", textAlign: "center", minHeight: 44 }}>Ver todos ({gastosActuales.length}) →</button>
               )}
             </div>
           ) : (
             <div style={{ textAlign: "center", color: T.text2, padding: "36px 0", fontSize: 14 }}>
               <div style={{ fontSize: 44, marginBottom: 12 }}>🌱</div>
-              No hay gastos con {nombreOtro}.<br />¡Cargá el primero!
+              {gastos.length > 0 ? <>Cuentas saldadas con {nombreOtro}.<br />¡Cargá el próximo gasto!</> : <>No hay gastos con {nombreOtro}.<br />¡Cargá el primero!</>}
             </div>
           )}
         </div>
@@ -873,7 +876,7 @@ export default function App() {
             <span style={{ fontSize: 12, color: T.text2 }}>{gastosFiltrados.length}{filtro !== "todos" ? ` de ${gastos.length}` : ""} gastos</span>
           </div>
 
-          {filtro === "todos" && gastos.length > 1 && <TortaGastos gastos={gastos} />}
+          {filtro === "todos" && gastosActuales.length >= 1 && <TortaGastos gastos={gastosActuales} />}
 
           <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 12, marginBottom: 16 }}>
             <button onClick={() => setFiltro("todos")} style={{ padding: "8px 16px", borderRadius: 20, whiteSpace: "nowrap", border: filtro === "todos" ? `2px solid ${T.accent}` : `1px solid ${T.border}`, background: filtro === "todos" ? "rgba(255,77,109,0.08)" : T.surface, color: T.text, cursor: "pointer", fontSize: 13, minHeight: 36 }}>Todos</button>
@@ -883,7 +886,34 @@ export default function App() {
           </div>
           {gastosFiltrados.length === 0
             ? <div style={{ textAlign: "center", color: T.text2, padding: "36px 0", fontSize: 14 }}>No hay gastos en esta categoría</div>
-            : gastosFiltrados.map(g => <GastoRow key={g.id} g={g} catEmoji={catEmoji} nombreGrupo={nombreOtro} miUid={usuario.uid} onEliminar={eliminarGasto} onEditar={abrirEditar} />)
+            : (() => {
+                const items = [];
+                let lastSaldadoEn = -1;
+                for (const g of gastosFiltrados) {
+                  const se = g.saldadoEn || null;
+                  if (se !== null && se !== lastSaldadoEn) {
+                    items.push({ _divider: true, saldadoEn: se });
+                  }
+                  lastSaldadoEn = se;
+                  items.push(g);
+                }
+                return items.map(item => item._divider
+                  ? (
+                    <div key={`saldado-${item.saldadoEn}`} style={{ display: "flex", alignItems: "center", gap: 10, margin: "4px 0 10px" }}>
+                      <div style={{ flex: 1, height: 1, background: T.border }} />
+                      <div style={{ fontSize: 11, color: T.text3, letterSpacing: 0.5, whiteSpace: "nowrap" }}>
+                        ✓ Saldado el {new Date(item.saldadoEn).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" })}
+                      </div>
+                      <div style={{ flex: 1, height: 1, background: T.border }} />
+                    </div>
+                  )
+                  : (
+                    <div key={item.id} style={{ opacity: item.saldadoEn ? 0.5 : 1 }}>
+                      <GastoRow g={item} catEmoji={catEmoji} nombreGrupo={nombreOtro} miUid={usuario.uid} onEliminar={eliminarGasto} onEditar={abrirEditar} />
+                    </div>
+                  )
+                );
+              })()
           }
         </div>
       )}
