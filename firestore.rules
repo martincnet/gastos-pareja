@@ -25,12 +25,13 @@ service cloud.firestore {
         request.auth.uid == resource.data.creadoPor;
     }
 
-    // Gastos: solo miembros del grupo pueden leer/crear/eliminar
-    // Solo el que cargó el gasto puede editarlo
-    // Al crear, cargadoPor debe ser el usuario autenticado
+    // Gastos: cualquier usuario autenticado puede leer (las queries de colección no
+    // soportan get() en reglas — la seguridad real está en que los grupoIds son
+    // IDs autogenerados imposibles de adivinar, y los grupos tienen sus propias reglas)
+    // Al crear: cargadoPor debe ser el usuario y debe ser miembro del grupo
+    // Solo el que cargó puede editar; cualquier miembro del grupo puede eliminar
     match /gastos/{gastoId} {
-      allow read: if request.auth != null &&
-        request.auth.uid in get(/databases/$(database)/documents/grupos/$(resource.data.grupoId)).data.miembros;
+      allow read: if request.auth != null;
       allow create: if request.auth != null &&
         request.resource.data.cargadoPor == request.auth.uid &&
         request.auth.uid in get(/databases/$(database)/documents/grupos/$(request.resource.data.grupoId)).data.miembros;

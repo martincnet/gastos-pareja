@@ -421,10 +421,16 @@ export default function App() {
   useEffect(() => {
     if (!grupoActivo) return;
     const q = query(collection(db, "gastos"), where("grupoId", "==", grupoActivo.id), orderBy("timestamp", "desc"));
-    const unsub = onSnapshot(q, (snap) => {
-      setGastos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setCargandoGastos(false);
-    });
+    const unsub = onSnapshot(q,
+      (snap) => {
+        setGastos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        setCargandoGastos(false);
+      },
+      (error) => {
+        console.error("Error al cargar gastos:", error);
+        setCargandoGastos(false);
+      }
+    );
     return () => unsub();
   }, [grupoActivo?.id]);
 
