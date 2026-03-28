@@ -557,14 +557,16 @@ export default function App() {
     setGuardando(false);
   };
 
-  const eliminarGasto = async (id) => {
-    try {
-      await deleteDoc(doc(db, "gastos", id));
-      setGastos(prev => prev.filter(g => g.id !== id));
-      mostrarToast("Gasto eliminado");
-    } catch {
-      mostrarToast("Error al eliminar", "err");
-    }
+  const eliminarGasto = (id) => {
+    confirmar("¿Eliminar este gasto?", async () => {
+      try {
+        await deleteDoc(doc(db, "gastos", id));
+        setGastos(prev => prev.filter(g => g.id !== id));
+        mostrarToast("Gasto eliminado");
+      } catch {
+        mostrarToast("Error al eliminar", "err");
+      }
+    });
   };
 
   const saldarCuentas = async () => {
@@ -631,10 +633,10 @@ export default function App() {
       {/* Modal de confirmación */}
       {modal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "0 24px" }}>
-          <div style={{ background: "#1c1a2a", borderRadius: 22, padding: "28px 24px", maxWidth: 320, width: "100%", border: "1px solid rgba(255,255,255,0.12)", textAlign: "center" }}>
-            <div style={{ fontSize: 15, color: "#f0ece8", lineHeight: 1.6, marginBottom: 24 }}>{modal.mensaje}</div>
+          <div style={{ background: T.surface, borderRadius: 22, padding: "28px 24px", maxWidth: 320, width: "100%", border: `1px solid ${T.border}`, boxShadow: "0 8px 32px rgba(0,0,0,0.12)", textAlign: "center" }}>
+            <div style={{ fontSize: 15, color: T.text, lineHeight: 1.6, marginBottom: 24 }}>{modal.mensaje}</div>
             <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={cerrarModal} style={{ flex: 1, padding: "14px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "#f0ece8", cursor: "pointer", fontSize: 15, fontFamily: "'Georgia', serif" }}>Cancelar</button>
+              <button onClick={cerrarModal} style={{ flex: 1, padding: "14px", borderRadius: 12, border: `1px solid ${T.border}`, background: T.surface2, color: T.text, cursor: "pointer", fontSize: 15, fontFamily: "'Georgia', serif" }}>Cancelar</button>
               <button onClick={() => { cerrarModal(); modal.onConfirm(); }} style={{ flex: 1, padding: "14px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #ff758c, #ff4d6d)", color: "#fff", cursor: "pointer", fontSize: 15, fontWeight: "bold", fontFamily: "'Georgia', serif", boxShadow: "0 4px 14px rgba(255,77,109,0.3)" }}>Confirmar</button>
             </div>
           </div>
@@ -686,8 +688,8 @@ export default function App() {
               Todavía no tenés grupos.<br />¡Creá el primero!
             </div>
           )}
-          {grupos.sort((a, b) => a.creadoEn - b.creadoEn).map(grupo => (
-            <GrupoCard key={grupo.id} grupo={grupo} usuarioUid={usuario.uid} onAbrir={abrirGrupo} onEliminar={eliminarGrupo} db={db} />
+          {[...grupos].sort((a, b) => a.creadoEn - b.creadoEn).map(grupo => (
+            <GrupoCard key={grupo.id} grupo={grupo} usuarioUid={usuario.uid} onAbrir={abrirGrupo} onEliminar={eliminarGrupo} />
           ))}
           {mostrarFormGrupo && (
             <div style={{ background: T.surface, borderRadius: 18, padding: "20px", marginBottom: 12, border: `1px solid ${T.border}`, boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
@@ -868,7 +870,7 @@ export default function App() {
           <button onClick={() => setVista("inicio")} style={{ background: "none", border: "none", color: T.accent2, cursor: "pointer", fontSize: 14, marginBottom: 16, padding: "8px 0", minHeight: 44 }}>← Volver</button>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <h2 style={{ margin: 0, fontSize: 20, fontWeight: "normal", color: T.text }}>Historial con {nombreOtro}</h2>
-            <span style={{ fontSize: 12, color: T.text2 }}>{gastos.length} gastos</span>
+            <span style={{ fontSize: 12, color: T.text2 }}>{gastosFiltrados.length}{filtro !== "todos" ? ` de ${gastos.length}` : ""} gastos</span>
           </div>
 
           {filtro === "todos" && gastos.length > 1 && <TortaGastos gastos={gastos} />}
@@ -897,17 +899,20 @@ export default function App() {
 }
 
 // ─── GrupoCard ────────────────────────────────────────────────────────────────
-function GrupoCard({ grupo, usuarioUid, onAbrir, onEliminar, db }) {
+function GrupoCard({ grupo, usuarioUid, onAbrir, onEliminar }) {
   const [balance, setBalance] = useState(0);
   const [cantGastos, setCantGastos] = useState(0);
 
   useEffect(() => {
     const q = query(collection(db, "gastos"), where("grupoId", "==", grupo.id));
-    const unsub = onSnapshot(q, (snap) => {
-      const gastos = snap.docs.map(d => d.data());
-      setCantGastos(gastos.length);
-      setBalance(calcularBalance(gastos, usuarioUid));
-    });
+    const unsub = onSnapshot(q,
+      (snap) => {
+        const gastos = snap.docs.map(d => d.data());
+        setCantGastos(gastos.length);
+        setBalance(calcularBalance(gastos, usuarioUid));
+      },
+      (error) => { console.error("Error al cargar balance:", error); }
+    );
     return () => unsub();
   }, [grupo.id, usuarioUid]);
 
