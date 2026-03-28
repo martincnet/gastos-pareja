@@ -508,7 +508,7 @@ export default function App() {
     if (!form.monto || isNaN(form.monto) || Number(form.monto) <= 0) return mostrarToast("El monto tiene que ser mayor a 0", "err");
     setGuardando(true);
     try {
-      await addDoc(collection(db, "gastos"), {
+      const nuevoGastoData = {
         grupoId: grupoActivo.id,
         descripcion: form.descripcion.trim(),
         categoria: form.categoria,
@@ -519,7 +519,9 @@ export default function App() {
         timestamp: Date.now(),
         cargadoPor: usuario.uid,
         cargadoPorNombre: usuarioData?.nombre || "",
-      });
+      };
+      const docRef = await addDoc(collection(db, "gastos"), nuevoGastoData);
+      setGastos(prev => [{ id: docRef.id, ...nuevoGastoData }, ...prev]);
       setForm({ descripcion: "", categoria: "comida", monto: "", modo: "pague_yo_mitad" });
       mostrarToast("Gasto cargado");
       setVista("inicio");
