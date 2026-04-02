@@ -1,0 +1,1236 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SplitEasy Complete UX/UI Mockup</title>
+    <style>
+      :root {
+        --bg: #f4eee7;
+        --paper: #fffdf9;
+        --paper-2: #f8f1e8;
+        --border: #e6dbcf;
+        --text: #231c1d;
+        --muted: #746b6c;
+        --muted-2: #a29797;
+        --accent: #ee625f;
+        --accent-2: #f19b73;
+        --positive: #e05672;
+        --negative: #5c74d9;
+        --success: #2f9c79;
+        --warning: #d38b22;
+        --shadow: 0 20px 55px rgba(71, 46, 26, 0.08);
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        font-family: "Inter", "Segoe UI", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, rgba(238, 98, 95, 0.12), transparent 24%),
+          radial-gradient(circle at bottom right, rgba(92, 116, 217, 0.10), transparent 20%),
+          var(--bg);
+      }
+
+      .page {
+        max-width: 1600px;
+        margin: 0 auto;
+        padding: 40px 24px 60px;
+      }
+
+      .hero {
+        margin-bottom: 30px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: rgba(238, 98, 95, 0.10);
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      h1 {
+        margin: 14px 0 10px;
+        font-family: Georgia, serif;
+        font-size: 42px;
+        letter-spacing: -0.04em;
+      }
+
+      .hero p {
+        margin: 0;
+        max-width: 900px;
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1.6;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(300px, 1fr));
+        gap: 28px;
+      }
+
+      .screen-block { min-width: 0; }
+
+      .screen-label {
+        margin: 0 0 12px;
+        font-size: 16px;
+        font-weight: 800;
+        color: var(--text);
+      }
+
+      .screen-note {
+        margin: 0 0 16px;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .phone {
+        background: #1e181d;
+        border-radius: 38px;
+        padding: 14px;
+        box-shadow: 0 28px 90px rgba(31, 19, 19, 0.22);
+      }
+
+      .screen {
+        position: relative;
+        overflow: hidden;
+        min-height: 800px;
+        border-radius: 28px;
+        background:
+          radial-gradient(circle at top right, rgba(238, 98, 95, 0.12), transparent 24%),
+          linear-gradient(180deg, #fffdf9 0%, #f8f1e8 100%);
+      }
+
+      .content {
+        padding: 24px 20px 104px;
+      }
+
+      .content.no-nav {
+        padding-bottom: 28px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+
+      .ghost {
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .title {
+        margin: 0;
+        font-family: Georgia, serif;
+        font-size: 28px;
+        letter-spacing: -0.03em;
+      }
+
+      .subtitle {
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .logo-mark {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        background: linear-gradient(135deg, var(--accent-2), var(--accent));
+        box-shadow: 0 10px 24px rgba(238, 98, 95, 0.28);
+      }
+
+      .logo-mark svg,
+      .icon-badge svg,
+      .icon-chip svg,
+      .expense-icon svg,
+      .meta-icon svg,
+      .action-icon svg,
+      .bottom-icon svg {
+        width: 18px;
+        height: 18px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 1.9;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .logo strong {
+        display: block;
+        font-size: 23px;
+        font-family: Georgia, serif;
+        letter-spacing: -0.03em;
+      }
+
+      .logo span {
+        display: block;
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .card {
+        background: rgba(255, 253, 249, 0.92);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+      }
+
+      .auth-wrap {
+        min-height: 800px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 26px 20px;
+      }
+
+      .auth-header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .auth-header .logo {
+        justify-content: center;
+      }
+
+      .auth-card {
+        padding: 24px 18px;
+      }
+
+      .tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+        padding: 4px;
+        border-radius: 14px;
+        background: var(--paper-2);
+        margin-bottom: 20px;
+      }
+
+      .tab {
+        min-height: 42px;
+        border: 0;
+        border-radius: 12px;
+        background: transparent;
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      .tab.active {
+        background: var(--paper);
+        color: var(--accent);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
+      }
+
+      .field { margin-bottom: 14px; }
+
+      .label {
+        margin-bottom: 8px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.10em;
+      }
+
+      .input {
+        width: 100%;
+        min-height: 54px;
+        padding: 14px 16px;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background: var(--paper-2);
+        color: var(--text);
+        font-size: 16px;
+      }
+
+      .cta {
+        width: 100%;
+        min-height: 56px;
+        border: 0;
+        border-radius: 18px;
+        background: linear-gradient(135deg, var(--accent-2), var(--accent));
+        color: #fff;
+        font-size: 16px;
+        font-weight: 800;
+        box-shadow: 0 14px 28px rgba(238, 98, 95, 0.26);
+      }
+
+      .muted-center {
+        text-align: center;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .section { margin-top: 18px; }
+
+      .section-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+
+      .eyebrow-title {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.10em;
+      }
+
+      .notification-banner {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 16px;
+        border-radius: 18px;
+        background: rgba(238, 98, 95, 0.07);
+        border: 1px solid rgba(238, 98, 95, 0.16);
+        color: var(--accent);
+      }
+
+      .icon-badge,
+      .expense-icon,
+      .action-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .icon-badge {
+        width: 34px;
+        height: 34px;
+        border-radius: 12px;
+        background: rgba(238, 98, 95, 0.10);
+        color: var(--accent);
+        flex-shrink: 0;
+      }
+
+      .group-card {
+        display: grid;
+        grid-template-columns: 52px 1fr auto;
+        gap: 12px;
+        align-items: center;
+        padding: 16px;
+      }
+
+      .avatar {
+        width: 52px;
+        height: 52px;
+        border-radius: 17px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 20px;
+        font-weight: 800;
+        background: linear-gradient(135deg, #7b86ee, #8d57bd);
+      }
+
+      .group-card strong {
+        display: block;
+        font-size: 17px;
+      }
+
+      .group-card small {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.45;
+      }
+
+      .status {
+        display: inline-flex;
+        margin-top: 6px;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: rgba(211, 139, 34, 0.10);
+        color: var(--warning);
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+      }
+
+      .mini-btn, .open-btn {
+        border: 0;
+        border-radius: 14px;
+        font-weight: 800;
+      }
+
+      .mini-btn {
+        width: 42px;
+        height: 42px;
+        background: rgba(224, 86, 114, 0.08);
+        color: var(--positive);
+      }
+
+      .open-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 42px;
+        padding: 0 14px;
+        color: #fff;
+        background: linear-gradient(135deg, #7b86ee, #8d57bd);
+      }
+
+      .balance-card {
+        padding: 24px;
+        color: #fff;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      }
+
+      .balance-card .top {
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+        opacity: 0.82;
+      }
+
+      .balance-card .value {
+        margin-top: 10px;
+        font-size: 46px;
+        font-weight: 900;
+        letter-spacing: -0.05em;
+      }
+
+      .balance-card .desc {
+        margin-top: 6px;
+        font-size: 16px;
+        opacity: 0.96;
+      }
+
+      .balance-card .meta {
+        margin-top: 10px;
+        font-size: 13px;
+        opacity: 0.8;
+      }
+
+      .action-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+
+      .action-card {
+        min-height: 88px;
+        padding: 14px 10px;
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: var(--paper);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .action-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 12px;
+        background: rgba(238, 98, 95, 0.08);
+        color: var(--accent);
+      }
+
+      .expense-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .expense-row {
+        display: grid;
+        grid-template-columns: 42px 1fr auto auto;
+        gap: 12px;
+        align-items: center;
+        padding: 14px;
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: rgba(255, 253, 249, 0.88);
+      }
+
+      .expense-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        background: var(--paper);
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+        color: var(--accent);
+      }
+
+      .expense-main strong {
+        display: block;
+        font-size: 15px;
+      }
+
+      .expense-main small {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.45;
+      }
+
+      .meta-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 14px;
+        height: 14px;
+        color: currentColor;
+      }
+
+      .amount-box {
+        text-align: right;
+      }
+
+      .amount-box strong {
+        display: block;
+        font-size: 16px;
+        letter-spacing: -0.03em;
+      }
+
+      .positive { color: var(--positive); }
+      .negative { color: var(--negative); }
+
+      .amount-box small {
+        color: var(--muted-2);
+        font-size: 10px;
+      }
+
+      .row-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .icon-btn {
+        width: 32px;
+        height: 32px;
+        border: 0;
+        border-radius: 10px;
+        background: transparent;
+        color: var(--muted-2);
+      }
+
+      .form-card {
+        padding: 22px 18px;
+      }
+
+      .split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .split-btn {
+        min-height: 58px;
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background: var(--paper);
+        color: var(--text);
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .split-btn.active {
+        border: 2px solid var(--accent);
+        background: rgba(238, 98, 95, 0.08);
+      }
+
+      .chips {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .icon-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: var(--paper);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .icon-chip.active {
+        border: 2px solid var(--accent);
+        background: rgba(238, 98, 95, 0.08);
+      }
+
+      .amount-input {
+        text-align: center;
+        font-size: 30px;
+        font-weight: 900;
+      }
+
+      .result {
+        padding: 16px;
+        border-radius: 18px;
+        border: 1px solid rgba(238, 98, 95, 0.18);
+        background: rgba(238, 98, 95, 0.08);
+      }
+
+      .result strong {
+        display: block;
+        font-size: 15px;
+      }
+
+      .result span {
+        display: block;
+        margin-top: 6px;
+        color: var(--positive);
+        font-size: 24px;
+        font-weight: 900;
+      }
+
+      .summary-card {
+        padding: 18px;
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 14px;
+      }
+
+      .stat {
+        padding: 14px;
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        background: var(--paper);
+      }
+
+      .stat span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .stat strong {
+        display: block;
+        margin-top: 6px;
+        font-size: 18px;
+      }
+
+      .donut {
+        position: relative;
+        margin-top: 14px;
+        height: 138px;
+        border-radius: 22px;
+        background: conic-gradient(var(--accent) 0 36%, var(--negative) 36% 58%, var(--success) 58% 79%, #f0b15e 79% 100%);
+      }
+
+      .donut::after {
+        content: "";
+        position: absolute;
+        inset: 26px;
+        border-radius: 50%;
+        background: var(--paper);
+        box-shadow: inset 0 0 0 1px var(--border);
+      }
+
+      .month-row {
+        display: flex;
+        gap: 8px;
+        overflow: hidden;
+      }
+
+      .month-chip {
+        padding: 8px 13px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: var(--paper);
+        font-size: 12px;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .month-chip.active {
+        border: 2px solid var(--accent);
+        background: rgba(238, 98, 95, 0.08);
+      }
+
+      .settled {
+        padding: 16px 18px;
+        border-radius: 18px;
+        border: 1px solid rgba(47, 156, 121, 0.20);
+        background: rgba(47, 156, 121, 0.08);
+        color: var(--success);
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .bottom-nav {
+        position: absolute;
+        left: 14px;
+        right: 14px;
+        bottom: 14px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        padding: 10px;
+        border-radius: 22px;
+        background: rgba(255, 253, 249, 0.96);
+        border: 1px solid var(--border);
+        box-shadow: 0 12px 28px rgba(60, 37, 25, 0.10);
+      }
+
+      .bottom-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        padding: 8px;
+        border-radius: 16px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .bottom-item.active {
+        background: rgba(238, 98, 95, 0.08);
+        color: var(--accent);
+      }
+
+      .bottom-icon {
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      @media (max-width: 1200px) {
+        .grid { grid-template-columns: repeat(2, minmax(280px, 1fr)); }
+      }
+
+      @media (max-width: 780px) {
+        .grid { grid-template-columns: 1fr; }
+        .page { max-width: 520px; }
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position:absolute">
+      <symbol id="i-brand" viewBox="0 0 24 24"><line x1="4" y1="12" x2="20" y2="12"/><circle cx="12" cy="5.5" r="2.5"/><circle cx="12" cy="18.5" r="2.5"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></symbol>
+      <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 7h11"/><path d="M8 12h11"/><path d="M8 17h11"/><circle cx="4.5" cy="7" r="1" fill="currentColor" stroke="none"/><circle cx="4.5" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="4.5" cy="17" r="1" fill="currentColor" stroke="none"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4.2 4.2L19 6.5"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M6 7l1 12a2 2 0 0 0 2 1.8h6A2 2 0 0 0 17 19L18 7"/><path d="M9 4h6"/></symbol>
+      <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4l9.5-9.5a2.1 2.1 0 0 0-4-4L4 16z"/><path d="m12.5 6.5 4 4"/></symbol>
+      <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+      <symbol id="i-food" viewBox="0 0 24 24"><path d="M7 3v8"/><path d="M4.5 3v5a2.5 2.5 0 0 0 5 0V3"/><path d="M7 11v10"/><path d="M16 3c-2 1.6-3 3.8-3 6.7V21"/><path d="M16 3v18"/></symbol>
+      <symbol id="i-cart" viewBox="0 0 24 24"><circle cx="9" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/><path d="M3 4h2l2.2 10.2a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 7H6.2"/></symbol>
+      <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5v2a2 2 0 0 0 0 5v2a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 5 16.5v-2a2 2 0 0 0 0-5z"/><path d="M9 9h6"/><path d="M9 15h6"/></symbol>
+      <symbol id="i-bus" viewBox="0 0 24 24"><path d="M7 17v2"/><path d="M17 17v2"/><path d="M6 17h12a1 1 0 0 0 1-1V8c0-3-2.5-4-7-4S5 5 5 8v8a1 1 0 0 0 1 1Z"/><path d="M7 13h.01"/><path d="M17 13h.01"/><path d="M7 8h10"/></symbol>
+      <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5"/><path d="M6.5 9.5V20h11V9.5"/><path d="M10 20v-5h4v5"/></symbol>
+      <symbol id="i-health" viewBox="0 0 24 24"><rect x="4.5" y="6" width="15" height="12" rx="3"/><path d="M12 9v6"/><path d="M9 12h6"/></symbol>
+      <symbol id="i-shirt" viewBox="0 0 24 24"><path d="m9 5 3-2 3 2 3 1.5-1.5 4-2.5-1V20h-6V9.5l-2.5 1L4 6.5Z"/></symbol>
+      <symbol id="i-plane" viewBox="0 0 24 24"><path d="M3 13 21 5l-5.5 14-3.5-5.5L7 17z"/><path d="M11.5 13.5 21 5"/></symbol>
+      <symbol id="i-box" viewBox="0 0 24 24"><path d="M12 3 4.5 7 12 11l7.5-4Z"/><path d="M4.5 7v10L12 21l7.5-4V7"/><path d="M12 11v10"/></symbol>
+      <symbol id="i-arrow-in" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="m7 10 5-5 5 5"/><rect x="4" y="4" width="16" height="16" rx="4"/></symbol>
+      <symbol id="i-arrow-out" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="m17 14-5 5-5-5"/><rect x="4" y="4" width="16" height="16" rx="4"/></symbol>
+      <symbol id="i-split" viewBox="0 0 24 24"><path d="M6 5h12"/><path d="M12 5v14"/><path d="m8.5 14 3.5 5 3.5-5"/></symbol>
+      <symbol id="i-divide" viewBox="0 0 24 24"><circle cx="12" cy="7.5" r="1.2" fill="currentColor" stroke="none"/><path d="M8 12h8"/><circle cx="12" cy="16.5" r="1.2" fill="currentColor" stroke="none"/></symbol>
+      <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 9a6 6 0 1 1 12 0c0 7 3 7 3 7H3s3 0 3-7"/><path d="M10.5 20a1.5 1.5 0 0 0 3 0"/></symbol>
+    </svg>
+
+    <div class="page">
+      <div class="hero">
+        <span class="eyebrow">Mockup completo</span>
+        <h1>SplitEasy con la nueva dirección UX/UI</h1>
+        <p>
+          Esta vista junta toda la app en una sola referencia visual: login, grupos, dashboard,
+          nuevo gasto, editar e historial. La idea es que puedas revisar la experiencia completa
+          antes de cerrar el rediseño e implementarlo a fondo.
+        </p>
+      </div>
+
+      <div class="grid">
+        <section class="screen-block">
+          <h2 class="screen-label">1. Login / Registro</h2>
+          <p class="screen-note">Más limpio, más editorial en branding, pero con controles más claros y operativos.</p>
+          <div class="phone">
+            <div class="screen">
+              <div class="auth-wrap">
+                <div class="auth-header">
+                  <div class="logo">
+                    <div class="logo-mark"><svg><use href="#i-brand"></use></svg></div>
+                    <div>
+                      <strong>SplitEasy</strong>
+                      <span>Dividí gastos sin drama</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card auth-card">
+                  <div class="tabs">
+                    <button class="tab active">Ingresar</button>
+                    <button class="tab">Registrarse</button>
+                  </div>
+
+                  <div class="field">
+                    <div class="label">Email</div>
+                    <div class="input">tu@email.com</div>
+                  </div>
+
+                  <div class="field">
+                    <div class="label">Contraseña</div>
+                    <div class="input">••••••••</div>
+                  </div>
+
+                  <button class="cta">Ingresar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="screen-block">
+          <h2 class="screen-label">2. Vista de grupos</h2>
+          <p class="screen-note">Lista más ordenada, llamadas a la acción claras y mejor lectura del estado de cada grupo.</p>
+          <div class="phone">
+            <div class="screen">
+              <div class="content no-nav">
+                <div class="topbar">
+                  <div class="logo">
+                    <div class="logo-mark"><svg><use href="#i-brand"></use></svg></div>
+                    <div>
+                      <strong>SplitEasy</strong>
+                      <span>Hola, Martín</span>
+                    </div>
+                  </div>
+                  <button class="ghost">Salir</button>
+                </div>
+
+                <div class="notification-banner">
+                  <div class="icon-badge"><svg><use href="#i-bell"></use></svg></div>
+                  <div>
+                    <strong style="display:block;font-size:14px;">Activar notificaciones</strong>
+                    <span style="color:var(--muted);font-size:12px;">Recibí avisos cuando tu pareja carga un gasto</span>
+                  </div>
+                </div>
+
+                <div class="section">
+                  <div class="card group-card">
+                    <div class="avatar">C</div>
+                    <div>
+                      <strong>Casa con Ailu</strong>
+                      <small>16 gastos · te debe $24.500</small>
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                      <button class="mini-btn"><svg><use href="#i-trash"></use></svg></button>
+                      <button class="open-btn">Ver <svg><use href="#i-chevron"></use></svg></button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="section">
+                  <div class="card group-card">
+                    <div class="avatar" style="background:linear-gradient(135deg,#2f9c79,#76c18c);">V</div>
+                    <div>
+                      <strong>Vacaciones</strong>
+                      <small>Sin gastos todavía</small>
+                      <span class="status">PENDIENTE</span>
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                      <button class="mini-btn"><svg><use href="#i-trash"></use></svg></button>
+                      <button class="open-btn" style="background:linear-gradient(135deg,#2f9c79,#76c18c);">Ver <svg><use href="#i-chevron"></use></svg></button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="section">
+                  <button class="cta">+ Nuevo grupo</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="screen-block">
+          <h2 class="screen-label">3. Dashboard del grupo</h2>
+          <p class="screen-note">El balance manda, las acciones rápidas son más sobrias y la lectura del estado es inmediata.</p>
+          <div class="phone">
+            <div class="screen">
+              <div class="content">
+                <div class="topbar">
+                  <button class="ghost">← Grupos</button>
+                  <button class="ghost">•••</button>
+                </div>
+
+                <h3 class="title">Casa con Ailu</h3>
+                <div class="subtitle">Resumen del período actual</div>
+
+                <div class="card balance-card section">
+                  <div class="top">Te deben</div>
+                  <div class="value">$24.500</div>
+                  <div class="desc">Ailu te debe más de lo que vos le debés</div>
+                  <div class="meta">6 gastos pendientes este mes</div>
+                </div>
+
+                <div class="section action-grid">
+                  <div class="action-card">
+                    <div class="action-icon"><svg><use href="#i-plus"></use></svg></div>
+                    Nuevo gasto
+                  </div>
+                  <div class="action-card">
+                    <div class="action-icon" style="background:rgba(92,116,217,0.08);color:var(--negative);"><svg><use href="#i-list"></use></svg></div>
+                    Historial
+                  </div>
+                  <div class="action-card">
+                    <div class="action-icon" style="background:rgba(47,156,121,0.08);color:var(--success);"><svg><use href="#i-check"></use></svg></div>
+                    Saldar
+                  </div>
+                </div>
+
+                <div class="section">
+                  <div class="section-head">
+                    <div class="eyebrow-title">Últimos movimientos</div>
+                    <button class="ghost">Ver todos</button>
+                  </div>
+
+                  <div class="expense-list">
+                    <div class="expense-row">
+                      <div class="expense-icon"><svg><use href="#i-food"></use></svg></div>
+                      <div class="expense-main">
+                        <strong>Pizza viernes</strong>
+                        <small>Hoy 21:32 · <span class="meta-icon positive"><svg><use href="#i-split"></use></svg></span> Ailu te debe la mitad</small>
+                      </div>
+                      <div class="amount-box">
+                        <strong class="positive">+$12.000</strong>
+                        <small>total $24.000</small>
+                      </div>
+                      <div class="row-actions">
+                        <button class="icon-btn"><svg><use href="#i-edit"></use></svg></button>
+                        <button class="icon-btn"><svg><use href="#i-trash"></use></svg></button>
+                      </div>
+                    </div>
+
+                    <div class="expense-row">
+                      <div class="expense-icon" style="color:var(--success);"><svg><use href="#i-cart"></use></svg></div>
+                      <div class="expense-main">
+                        <strong>Compra super</strong>
+                        <small>Ayer 19:10 · <span class="meta-icon negative"><svg><use href="#i-split"></use></svg></span> Vos debés la mitad</small>
+                      </div>
+                      <div class="amount-box">
+                        <strong class="negative">-$4.500</strong>
+                        <small>total $9.000</small>
+                      </div>
+                      <div class="row-actions">
+                        <button class="icon-btn"><svg><use href="#i-edit"></use></svg></button>
+                        <button class="icon-btn"><svg><use href="#i-trash"></use></svg></button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bottom-nav">
+                <div class="bottom-item active"><span class="bottom-icon"><svg><use href="#i-brand"></use></svg></span>Inicio</div>
+                <div class="bottom-item"><span class="bottom-icon"><svg><use href="#i-plus"></use></svg></span>Nuevo</div>
+                <div class="bottom-item"><span class="bottom-icon"><svg><use href="#i-list"></use></svg></span>Historial</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="screen-block">
+          <h2 class="screen-label">4. Nuevo gasto</h2>
+          <p class="screen-note">La acción principal de la app queda guiada por decisiones simples y un resumen final claro.</p>
+          <div class="phone">
+            <div class="screen">
+              <div class="content">
+                <div class="topbar">
+                  <button class="ghost">← Inicio</button>
+                  <div></div>
+                </div>
+
+                <h3 class="title">Nuevo gasto</h3>
+                <div class="subtitle">Cargar un gasto sin pensar demasiado</div>
+
+                <div class="card form-card section">
+                  <div class="field">
+                    <div class="label">Descripción</div>
+                    <div class="input">Pizza viernes</div>
+                  </div>
+
+                  <div class="field">
+                    <div class="label">Monto</div>
+                    <div class="input amount-input">$ 24.000</div>
+                  </div>
+
+                  <div class="field">
+                    <div class="label">Quién pagó</div>
+                    <div class="split">
+                      <button class="split-btn active">Yo</button>
+                      <button class="split-btn">Ailu</button>
+                    </div>
+                  </div>
+
+                  <div class="field">
+                    <div class="label">Cómo se reparte</div>
+                    <div class="split">
+                      <button class="split-btn">Total</button>
+                      <button class="split-btn active">Mitad</button>
+                    </div>
+                  </div>
+
+                  <div class="field">
+                    <div class="label">Categoría</div>
+                    <div class="chips">
+                      <div class="icon-chip active"><svg><use href="#i-food"></use></svg>Comida</div>
+                      <div class="icon-chip"><svg><use href="#i-cart"></use></svg>Super</div>
+                      <div class="icon-chip"><svg><use href="#i-ticket"></use></svg>Salidas</div>
+                      <div class="icon-chip"><svg><use href="#i-home"></use></svg>Casa</div>
+                      <div class="icon-chip"><svg><use href="#i-bus"></use></svg>Transporte</div>
+                      <div class="icon-chip"><svg><use href="#i-box"></use></svg>Otro</div>
+                    </div>
+                  </div>
+
+                  <div class="result">
+                    <strong>Resultado</strong>
+                    <span>Ailu te debe $12.000</span>
+                  </div>
+
+                  <div class="section">
+                    <button class="cta">Guardar gasto</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bottom-nav">
+                <div class="bottom-item"><span class="bottom-icon"><svg><use href="#i-brand"></use></svg></span>Inicio</div>
+                <div class="bottom-item active"><span class="bottom-icon"><svg><use href="#i-plus"></use></svg></span>Nuevo</div>
+                <div class="bottom-item"><span class="bottom-icon"><svg><use href="#i-list"></use></svg></span>Historial</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="screen-block">
+          <h2 class="screen-label">5. Editar gasto</h2>
+          <p class="screen-note">Misma estructura que alta para que editar no sea reaprender una pantalla distinta.</p>
+          <div class="phone">
+            <div class="screen">
+              <div class="content">
+                <div class="topbar">
+                  <button class="ghost">← Inicio</button>
+                  <button class="ghost">Eliminar</button>
+                </div>
+
+                <h3 class="title">Editar gasto</h3>
+                <div class="subtitle">Actualizar rápido sin perder contexto</div>
+
+                <div class="card form-card section">
+                  <div class="field">
+                    <div class="label">Descripción</div>
+                    <div class="input">Compra super</div>
+                  </div>
+
+                  <div class="field">
+                    <div class="label">Monto</div>
+                    <div class="input amount-input">$ 9.000</div>
+                  </div>
+
+                  <div class="field">
+                    <div class="label">Quién pagó</div>
+                    <div class="split">
+                      <button class="split-btn">Yo</button>
+                      <button class="split-btn active">Ailu</button>
+                    </div>
+                  </div>
+
+                  <div class="field">
+                    <div class="label">Cómo se reparte</div>
+                    <div class="split">
+                      <button class="split-btn">Total</button>
+                      <button class="split-btn active">Mitad</button>
+                    </div>
+                  </div>
+
+                  <div class="field">
+                    <div class="label">Categoría</div>
+                    <div class="chips">
+                      <div class="icon-chip"><svg><use href="#i-food"></use></svg>Comida</div>
+                      <div class="icon-chip active"><svg><use href="#i-cart"></use></svg>Super</div>
+                      <div class="icon-chip"><svg><use href="#i-home"></use></svg>Casa</div>
+                    </div>
+                  </div>
+
+                  <div class="result" style="background:rgba(92,116,217,0.08);border-color:rgba(92,116,217,0.18);">
+                    <strong>Resultado</strong>
+                    <span style="color:var(--negative);">Vos le debés $4.500</span>
+                  </div>
+
+                  <div class="section">
+                    <button class="cta">Guardar cambios</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bottom-nav">
+                <div class="bottom-item"><span class="bottom-icon"><svg><use href="#i-brand"></use></svg></span>Inicio</div>
+                <div class="bottom-item active"><span class="bottom-icon"><svg><use href="#i-plus"></use></svg></span>Nuevo</div>
+                <div class="bottom-item"><span class="bottom-icon"><svg><use href="#i-list"></use></svg></span>Historial</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="screen-block">
+          <h2 class="screen-label">6. Historial</h2>
+          <p class="screen-note">Resumen mensual arriba, filtros claros y lista de movimientos más limpia para escanear.</p>
+          <div class="phone">
+            <div class="screen">
+              <div class="content">
+                <div class="topbar">
+                  <button class="ghost">← Inicio</button>
+                  <button class="ghost">Abr 2026 ▾</button>
+                </div>
+
+                <h3 class="title">Historial</h3>
+                <div class="subtitle">Análisis y movimientos separados</div>
+
+                <div class="month-row section">
+                  <div class="month-chip active">Abr 2026</div>
+                  <div class="month-chip">Mar 2026</div>
+                  <div class="month-chip">Feb 2026</div>
+                </div>
+
+                <div class="card summary-card section">
+                  <div class="eyebrow-title">Resumen del mes</div>
+                  <div class="summary-grid">
+                    <div class="stat">
+                      <span>Total cargado</span>
+                      <strong>$86.000</strong>
+                    </div>
+                    <div class="stat">
+                      <span>Balance</span>
+                      <strong class="positive">Te deben $14.000</strong>
+                    </div>
+                  </div>
+                  <div class="donut"></div>
+                </div>
+
+                <div class="section">
+                  <div class="chips">
+                    <div class="icon-chip active">Todos</div>
+                    <div class="icon-chip"><svg><use href="#i-food"></use></svg>Comida</div>
+                    <div class="icon-chip"><svg><use href="#i-cart"></use></svg>Super</div>
+                    <div class="icon-chip"><svg><use href="#i-home"></use></svg>Casa</div>
+                  </div>
+                </div>
+
+                <div class="section">
+                  <div class="section-head">
+                    <div class="eyebrow-title">Movimientos</div>
+                    <div class="subtitle" style="margin-top:0;">12 items</div>
+                  </div>
+
+                  <div class="expense-list">
+                    <div class="expense-row">
+                      <div class="expense-icon"><svg><use href="#i-food"></use></svg></div>
+                      <div class="expense-main">
+                        <strong>Pizza viernes</strong>
+                        <small>Hoy 21:32 · Cargaste vos · <span class="meta-icon positive"><svg><use href="#i-split"></use></svg></span> Ailu te debe la mitad</small>
+                      </div>
+                      <div class="amount-box">
+                        <strong class="positive">+$12.000</strong>
+                        <small>total $24.000</small>
+                      </div>
+                      <div class="row-actions">
+                        <button class="icon-btn"><svg><use href="#i-edit"></use></svg></button>
+                        <button class="icon-btn"><svg><use href="#i-trash"></use></svg></button>
+                      </div>
+                    </div>
+
+                    <div class="expense-row">
+                      <div class="expense-icon" style="color:var(--success);"><svg><use href="#i-cart"></use></svg></div>
+                      <div class="expense-main">
+                        <strong>Jumbo</strong>
+                        <small>Ayer 19:10 · Cargó Ailu · <span class="meta-icon negative"><svg><use href="#i-divide"></use></svg></span> Vos debés la mitad</small>
+                      </div>
+                      <div class="amount-box">
+                        <strong class="negative">-$4.500</strong>
+                        <small>total $9.000</small>
+                      </div>
+                      <div class="row-actions">
+                        <button class="icon-btn"><svg><use href="#i-edit"></use></svg></button>
+                        <button class="icon-btn"><svg><use href="#i-trash"></use></svg></button>
+                      </div>
+                    </div>
+
+                    <div class="expense-row" style="opacity:0.58;">
+                      <div class="expense-icon" style="color:var(--accent-2);"><svg><use href="#i-home"></use></svg></div>
+                      <div class="expense-main">
+                        <strong>Lavandina y papel</strong>
+                        <small>Lun 28 · <span class="meta-icon" style="color:var(--success);"><svg><use href="#i-check"></use></svg></span> Saldado el 31/03/26</small>
+                      </div>
+                      <div class="amount-box">
+                        <strong class="positive">+$6.000</strong>
+                        <small>cerrado</small>
+                      </div>
+                      <div class="row-actions">
+                        <button class="icon-btn"><svg><use href="#i-edit"></use></svg></button>
+                        <button class="icon-btn"><svg><use href="#i-trash"></use></svg></button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="section settled">
+                  <span class="meta-icon"><svg><use href="#i-check"></use></svg></span>
+                  Ver movimientos saldados
+                </div>
+              </div>
+
+              <div class="bottom-nav">
+                <div class="bottom-item"><span class="bottom-icon"><svg><use href="#i-brand"></use></svg></span>Inicio</div>
+                <div class="bottom-item"><span class="bottom-icon"><svg><use href="#i-plus"></use></svg></span>Nuevo</div>
+                <div class="bottom-item active"><span class="bottom-icon"><svg><use href="#i-list"></use></svg></span>Historial</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </body>
+</html>

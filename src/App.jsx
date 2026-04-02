@@ -43,15 +43,15 @@ async function registrarTokenFCM(uid) {
 }
 
 const CATEGORIAS = [
-  { id: "comida",     label: "Comida",      emoji: "🍕" },
-  { id: "super",      label: "Super",       emoji: "🛒" },
-  { id: "salidas",    label: "Salidas",     emoji: "🎬" },
-  { id: "transporte", label: "Transporte",  emoji: "🚌" },
-  { id: "casa",       label: "Casa",        emoji: "🏠" },
-  { id: "salud",      label: "Salud",       emoji: "💊" },
-  { id: "ropa",       label: "Ropa",        emoji: "👗" },
-  { id: "viajes",     label: "Viajes",      emoji: "✈️" },
-  { id: "otro",       label: "Otro",        emoji: "📦" },
+  { id: "comida",     label: "Comida",      emoji: "🍕", icon: "food" },
+  { id: "super",      label: "Super",       emoji: "🛒", icon: "cart" },
+  { id: "salidas",    label: "Salidas",     emoji: "🎬", icon: "ticket" },
+  { id: "transporte", label: "Transporte",  emoji: "🚌", icon: "bus" },
+  { id: "casa",       label: "Casa",        emoji: "🏠", icon: "home" },
+  { id: "salud",      label: "Salud",       emoji: "💊", icon: "health" },
+  { id: "ropa",       label: "Ropa",        emoji: "👗", icon: "shirt" },
+  { id: "viajes",     label: "Viajes",      emoji: "✈️", icon: "plane" },
+  { id: "otro",       label: "Otro",        emoji: "📦", icon: "box" },
 ];
 
 const COLORES_GRUPO = [
@@ -64,10 +64,10 @@ const COLORES_GRUPO = [
 ];
 
 const MODOS = [
-  { id: "pague_yo_total",  label: "Pagué yo, me deben el total", emoji: "💸", desc: "El otro te debe todo" },
-  { id: "pague_yo_mitad",  label: "Pagué yo, me deben la mitad", emoji: "✂️", desc: "Se divide al 50%" },
-  { id: "pago_otro_total", label: "Pagó el otro, le debo el total", emoji: "🙏", desc: "Le debés todo al otro" },
-  { id: "pago_otro_mitad", label: "Pagó el otro, le debo la mitad", emoji: "💝", desc: "Se divide al 50%" },
+  { id: "pague_yo_total",  label: "Pagué yo, me deben el total", emoji: "💸", icon: "arrow-in",  desc: "El otro te debe todo" },
+  { id: "pague_yo_mitad",  label: "Pagué yo, me deben la mitad", emoji: "✂️", icon: "split",     desc: "Se divide al 50%" },
+  { id: "pago_otro_total", label: "Pagó el otro, le debo el total", emoji: "🙏", icon: "arrow-out", desc: "Le debés todo al otro" },
+  { id: "pago_otro_mitad", label: "Pagó el otro, le debo la mitad", emoji: "💝", icon: "divide",   desc: "Se divide al 50%" },
 ];
 
 const CAT_COLORES = {
@@ -112,6 +112,29 @@ function formatMonto(n) {
   return n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function formatMontoInput(raw) {
+  const limpio = String(raw || "").replace(/[^\d,]/g, "");
+  if (!limpio) return "";
+
+  const [enteraRaw, decimalRaw = ""] = limpio.split(",");
+  const entera = enteraRaw.replace(/^0+(?=\d)/, "") || "0";
+  const conMiles = entera.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  const decimal = decimalRaw.slice(0, 2);
+
+  return decimalRaw !== "" ? `${conMiles},${decimal}` : conMiles;
+}
+
+function parseMontoInput(raw) {
+  if (!raw) return NaN;
+  const normalizado = String(raw).replace(/\./g, "").replace(",", ".");
+  const numero = Number(normalizado);
+  return Number.isFinite(numero) ? numero : NaN;
+}
+
+function getCategoriaMeta(id) {
+  return CATEGORIAS.find(c => c.id === id) || CATEGORIAS[CATEGORIAS.length - 1];
+}
+
 function calcularBalance(gastos, miUid) {
   let balance = 0;
   for (const g of gastos) {
@@ -136,17 +159,17 @@ function getEtiqueta(g, miUid, nombreOtro) {
   const yoCargue = g.cargadoPor === miUid;
   const modo = g.modo;
   if (yoCargue) {
-    if (modo === "pague_yo_total")  return { label: `${nombreOtro} te debe el total`, emoji: "💸" };
-    if (modo === "pague_yo_mitad")  return { label: `${nombreOtro} te debe la mitad`, emoji: "✂️" };
-    if (modo === "pago_otro_total") return { label: `Le debés el total a ${nombreOtro}`, emoji: "🙏" };
-    if (modo === "pago_otro_mitad") return { label: `Le debés la mitad a ${nombreOtro}`, emoji: "💝" };
+    if (modo === "pague_yo_total")  return { label: `${nombreOtro} te debe el total`, icon: "arrow-in" };
+    if (modo === "pague_yo_mitad")  return { label: `${nombreOtro} te debe la mitad`, icon: "split" };
+    if (modo === "pago_otro_total") return { label: `Le debés el total a ${nombreOtro}`, icon: "arrow-out" };
+    if (modo === "pago_otro_mitad") return { label: `Le debés la mitad a ${nombreOtro}`, icon: "divide" };
   } else {
-    if (modo === "pague_yo_total")  return { label: `Le debés el total a ${nombreOtro}`, emoji: "🙏" };
-    if (modo === "pague_yo_mitad")  return { label: `Le debés la mitad a ${nombreOtro}`, emoji: "💝" };
-    if (modo === "pago_otro_total") return { label: `${nombreOtro} te debe el total`, emoji: "💸" };
-    if (modo === "pago_otro_mitad") return { label: `${nombreOtro} te debe la mitad`, emoji: "✂️" };
+    if (modo === "pague_yo_total")  return { label: `Le debés el total a ${nombreOtro}`, icon: "arrow-out" };
+    if (modo === "pague_yo_mitad")  return { label: `Le debés la mitad a ${nombreOtro}`, icon: "divide" };
+    if (modo === "pago_otro_total") return { label: `${nombreOtro} te debe el total`, icon: "arrow-in" };
+    if (modo === "pago_otro_mitad") return { label: `${nombreOtro} te debe la mitad`, icon: "split" };
   }
-  return { label: "", emoji: "" };
+  return { label: "", icon: "box" };
 }
 
 function getMontoYSigno(g, miUid) {
@@ -160,6 +183,238 @@ function getMontoYSigno(g, miUid) {
     meDebenAMi = g.modo === "pago_otro_total" || g.modo === "pago_otro_mitad";
   }
   return { monto, signo: meDebenAMi ? "+" : "-", color: meDebenAMi ? "#E84070" : "#7C6AF6" };
+}
+
+function getModoUI(modo) {
+  switch (modo) {
+    case "pague_yo_total":
+      return { quienPago: "yo", tipoDivision: "total" };
+    case "pague_yo_mitad":
+      return { quienPago: "yo", tipoDivision: "mitad" };
+    case "pago_otro_total":
+      return { quienPago: "otro", tipoDivision: "total" };
+    case "pago_otro_mitad":
+    default:
+      return { quienPago: "otro", tipoDivision: "mitad" };
+  }
+}
+
+function getModoDesdeUI(quienPago, tipoDivision) {
+  if (quienPago === "yo") {
+    return tipoDivision === "total" ? "pague_yo_total" : "pague_yo_mitad";
+  }
+  return tipoDivision === "total" ? "pago_otro_total" : "pago_otro_mitad";
+}
+
+function getResumenModo(modo, nombreOtro, montoRaw) {
+  const montoNum = parseMontoInput(montoRaw);
+  if (!montoRaw || Number.isNaN(montoNum) || montoNum <= 0) return null;
+  const mitad = modo.includes("mitad");
+  const monto = mitad ? montoNum / 2 : montoNum;
+
+  switch (modo) {
+    case "pague_yo_total":
+      return { titulo: "Resultado", texto: `${nombreOtro} te debe $${formatMonto(monto)}`, color: "#E84070", fondo: "rgba(255,77,109,0.08)", borde: "rgba(255,77,109,0.18)" };
+    case "pague_yo_mitad":
+      return { titulo: "Resultado", texto: `${nombreOtro} te debe $${formatMonto(monto)}`, color: "#E84070", fondo: "rgba(255,77,109,0.08)", borde: "rgba(255,77,109,0.18)" };
+    case "pago_otro_total":
+      return { titulo: "Resultado", texto: `Vos le debés $${formatMonto(monto)} a ${nombreOtro}`, color: "#7C6AF6", fondo: "rgba(124,106,246,0.08)", borde: "rgba(124,106,246,0.18)" };
+    case "pago_otro_mitad":
+    default:
+      return { titulo: "Resultado", texto: `Vos le debés $${formatMonto(monto)} a ${nombreOtro}`, color: "#7C6AF6", fondo: "rgba(124,106,246,0.08)", borde: "rgba(124,106,246,0.18)" };
+  }
+}
+
+function IconoLinea({ name, size = 20, color = "currentColor", stroke = 1.9 }) {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: color,
+    strokeWidth: stroke,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    "aria-hidden": true,
+  };
+
+  switch (name) {
+    case "food":
+      return (
+        <svg {...common}>
+          <path d="M7 3v8" />
+          <path d="M4.5 3v5a2.5 2.5 0 0 0 5 0V3" />
+          <path d="M7 11v10" />
+          <path d="M16 3c-2 1.6-3 3.8-3 6.7V21" />
+          <path d="M16 3v18" />
+        </svg>
+      );
+    case "cart":
+      return (
+        <svg {...common}>
+          <circle cx="9" cy="19" r="1.5" />
+          <circle cx="17" cy="19" r="1.5" />
+          <path d="M3 4h2l2.2 10.2a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 7H6.2" />
+        </svg>
+      );
+    case "ticket":
+      return (
+        <svg {...common}>
+          <path d="M5 7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5v2a2 2 0 0 0 0 5v2a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 5 16.5v-2a2 2 0 0 0 0-5z" />
+          <path d="M9 9h6" />
+          <path d="M9 15h6" />
+        </svg>
+      );
+    case "bus":
+      return (
+        <svg {...common}>
+          <path d="M7 17v2" />
+          <path d="M17 17v2" />
+          <path d="M6 17h12a1 1 0 0 0 1-1V8c0-3-2.5-4-7-4S5 5 5 8v8a1 1 0 0 0 1 1Z" />
+          <path d="M7 13h.01" />
+          <path d="M17 13h.01" />
+          <path d="M7 8h10" />
+        </svg>
+      );
+    case "home":
+      return (
+        <svg {...common}>
+          <path d="M4 10.5 12 4l8 6.5" />
+          <path d="M6.5 9.5V20h11V9.5" />
+          <path d="M10 20v-5h4v5" />
+        </svg>
+      );
+    case "health":
+      return (
+        <svg {...common}>
+          <rect x="4.5" y="6" width="15" height="12" rx="3" />
+          <path d="M12 9v6" />
+          <path d="M9 12h6" />
+        </svg>
+      );
+    case "shirt":
+      return (
+        <svg {...common}>
+          <path d="m9 5 3-2 3 2 3 1.5-1.5 4-2.5-1V20h-6V9.5l-2.5 1L4 6.5Z" />
+        </svg>
+      );
+    case "plane":
+      return (
+        <svg {...common}>
+          <path d="M3 13 21 5l-5.5 14-3.5-5.5L7 17z" />
+          <path d="M11.5 13.5 21 5" />
+        </svg>
+      );
+    case "box":
+      return (
+        <svg {...common}>
+          <path d="M12 3 4.5 7 12 11l7.5-4Z" />
+          <path d="M4.5 7v10L12 21l7.5-4V7" />
+          <path d="M12 11v10" />
+        </svg>
+      );
+    case "arrow-in":
+      return (
+        <svg {...common}>
+          <path d="M12 5v14" />
+          <path d="m7 10 5-5 5 5" />
+          <rect x="4" y="4" width="16" height="16" rx="4" />
+        </svg>
+      );
+    case "arrow-out":
+      return (
+        <svg {...common}>
+          <path d="M12 19V5" />
+          <path d="m17 14-5 5-5-5" />
+          <rect x="4" y="4" width="16" height="16" rx="4" />
+        </svg>
+      );
+    case "split":
+      return (
+        <svg {...common}>
+          <path d="M6 5h12" />
+          <path d="M12 5v14" />
+          <path d="m8.5 14 3.5 5 3.5-5" />
+        </svg>
+      );
+    case "divide":
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="7.5" r="1.2" fill={color} stroke="none" />
+          <path d="M8 12h8" />
+          <circle cx="12" cy="16.5" r="1.2" fill={color} stroke="none" />
+        </svg>
+      );
+    case "plus":
+      return (
+        <svg {...common}>
+          <path d="M12 5v14" />
+          <path d="M5 12h14" />
+        </svg>
+      );
+    case "list":
+      return (
+        <svg {...common}>
+          <path d="M8 7h11" />
+          <path d="M8 12h11" />
+          <path d="M8 17h11" />
+          <circle cx="4.5" cy="7" r="1" fill={color} stroke="none" />
+          <circle cx="4.5" cy="12" r="1" fill={color} stroke="none" />
+          <circle cx="4.5" cy="17" r="1" fill={color} stroke="none" />
+        </svg>
+      );
+    case "check":
+      return (
+        <svg {...common}>
+          <path d="m5 12 4.2 4.2L19 6.5" />
+        </svg>
+      );
+    case "bell":
+      return (
+        <svg {...common}>
+          <path d="M6 9a6 6 0 1 1 12 0c0 7 3 7 3 7H3s3 0 3-7" />
+          <path d="M10.5 20a1.5 1.5 0 0 0 3 0" />
+        </svg>
+      );
+    case "users":
+      return (
+        <svg {...common}>
+          <path d="M16.5 19a4.5 4.5 0 0 0-9 0" />
+          <circle cx="12" cy="10" r="3" />
+          <path d="M21 19a3.8 3.8 0 0 0-3-3.7" />
+          <path d="M3 19a3.8 3.8 0 0 1 3-3.7" />
+        </svg>
+      );
+    case "trash":
+      return (
+        <svg {...common}>
+          <path d="M4 7h16" />
+          <path d="M10 11v6" />
+          <path d="M14 11v6" />
+          <path d="M6 7l1 12a2 2 0 0 0 2 1.8h6a2 2 0 0 0 2-1.8L18 7" />
+          <path d="M9 4h6" />
+        </svg>
+      );
+    case "edit":
+      return (
+        <svg {...common}>
+          <path d="M4 20h4l9.5-9.5a2.1 2.1 0 0 0-4-4L4 16z" />
+          <path d="m12.5 6.5 4 4" />
+        </svg>
+      );
+    case "chevron-right":
+      return (
+        <svg {...common}>
+          <path d="m9 6 6 6-6 6" />
+        </svg>
+      );
+    default:
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="8" />
+        </svg>
+      );
+  }
 }
 
 // ─── Logo ─────────────────────────────────────────────────────────────────────
@@ -205,8 +460,8 @@ function TortaGastos({ gastos }) {
     .map(([cat, val]) => ({
       cat, val, pct: val / total,
       color: CAT_COLORES[cat] || "#A0A0B0",
-      label: CATEGORIAS.find(c => c.id === cat)?.label || cat,
-      emoji: CATEGORIAS.find(c => c.id === cat)?.emoji || "📦",
+      label: getCategoriaMeta(cat).label || cat,
+      icon: getCategoriaMeta(cat).icon || "box",
     }));
 
   const cx = 70, cy = 70, r = 55, ri = 33;
@@ -245,7 +500,12 @@ function TortaGastos({ gastos }) {
           {arcs.map(s => (
             <div key={s.cat} style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{ width: 10, height: 10, borderRadius: 3, background: s.color, flexShrink: 0 }} />
-              <div style={{ flex: 1, fontSize: 12, color: T.text }}>{s.emoji} {s.label}</div>
+              <div style={{ flex: 1, fontSize: 12, color: T.text, display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ width: 18, height: 18, display: "inline-flex", alignItems: "center", justifyContent: "center", color: s.color }}>
+                  <IconoLinea name={s.icon} size={14} color={s.color} />
+                </span>
+                {s.label}
+              </div>
               <div style={{ fontSize: 12, fontWeight: "bold", color: T.text }}>{Math.round(s.pct * 100)}%</div>
             </div>
           ))}
@@ -307,7 +567,7 @@ function AuthScreen() {
         <LogoMarca size="grande" />
       </div>
 
-      <div style={{ width: "100%", maxWidth: 380, background: T.surface, borderRadius: 22, padding: "28px 24px", border: `1px solid ${T.border}`, boxShadow: "0 4px 24px rgba(0,0,0,0.07)" }}>
+      <div style={{ width: "100%", maxWidth: 390, background: "rgba(255,255,255,0.92)", borderRadius: 24, padding: "28px 24px", border: `1px solid ${T.border}`, boxShadow: "0 10px 34px rgba(61,40,22,0.08)" }}>
         <div style={{ display: "flex", background: T.surface2, borderRadius: 12, padding: 4, marginBottom: 24 }}>
           {["login", "registro"].map(m => (
             <button key={m} onClick={() => { setModo(m); setError(""); }} style={{
@@ -345,11 +605,11 @@ function AuthScreen() {
         {error && <div style={{ color: "#E8375A", fontSize: 13, marginBottom: 16, textAlign: "center" }}>{error}</div>}
 
         <button onClick={handleSubmit} disabled={cargando} style={{
-          width: "100%", padding: "17px", borderRadius: 14, border: "none",
+          width: "100%", padding: "17px", borderRadius: 18, border: "none",
           background: cargando ? "rgba(255,77,109,0.35)" : "linear-gradient(135deg, #ff758c, #ff4d6d)",
           color: "#fff", fontSize: 16, fontWeight: "bold", cursor: cargando ? "not-allowed" : "pointer",
           fontFamily: "'Georgia', serif",
-          boxShadow: cargando ? "none" : "0 4px 18px rgba(255,77,109,0.3)",
+          boxShadow: cargando ? "none" : "0 12px 28px rgba(255,77,109,0.24)",
         }}>{cargando ? "Cargando..." : modo === "login" ? "Ingresar" : "Crear cuenta"}</button>
       </div>
     </div>
@@ -358,6 +618,7 @@ function AuthScreen() {
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
 export default function App() {
+  const FORM_INICIAL = { descripcion: "", categoria: "comida", monto: "", modo: "pague_yo_mitad" };
   const [usuario, setUsuario] = useState(null);
   const [usuarioData, setUsuarioData] = useState(null);
   const [authListo, setAuthListo] = useState(false);
@@ -365,7 +626,7 @@ export default function App() {
   const [grupoActivo, setGrupoActivo] = useState(null);
   const [gastos, setGastos] = useState([]);
   const [vista, setVista] = useState("grupos");
-  const [form, setForm] = useState({ descripcion: "", categoria: "comida", monto: "", modo: "pague_yo_mitad" });
+  const [form, setForm] = useState(FORM_INICIAL);
   const [toast, setToast] = useState(null);
   const [filtro, setFiltro] = useState("todos");
   const [guardando, setGuardando] = useState(false);
@@ -468,6 +729,11 @@ export default function App() {
     setMostrarFormGrupo(false);
   };
 
+  const resetFormGasto = () => {
+    setForm(FORM_INICIAL);
+    setGastoEditando(null);
+  };
+
   const crearGrupo = async () => {
     const nombre = nuevoGrupoNombre.trim();
     const emailOtro = nuevoGrupoEmail.trim().toLowerCase();
@@ -526,15 +792,16 @@ export default function App() {
   };
 
   const agregarGasto = async () => {
+    const montoNumero = parseMontoInput(form.monto);
     if (!form.descripcion.trim()) return mostrarToast("Poné una descripción", "err");
-    if (!form.monto || isNaN(form.monto) || Number(form.monto) <= 0) return mostrarToast("El monto tiene que ser mayor a 0", "err");
+    if (!form.monto || Number.isNaN(montoNumero) || montoNumero <= 0) return mostrarToast("El monto tiene que ser mayor a 0", "err");
     setGuardando(true);
     try {
       const nuevoGastoData = {
         grupoId: grupoActivo.id,
         descripcion: form.descripcion.trim(),
         categoria: form.categoria,
-        monto: parseFloat(form.monto),
+        monto: montoNumero,
         modo: form.modo,
         fecha: new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" }),
         hora: new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
@@ -544,7 +811,7 @@ export default function App() {
       };
       const docRef = await addDoc(collection(db, "gastos"), nuevoGastoData);
       setGastos(prev => [{ id: docRef.id, ...nuevoGastoData }, ...prev]);
-      setForm({ descripcion: "", categoria: "comida", monto: "", modo: "pague_yo_mitad" });
+      resetFormGasto();
       mostrarToast("Gasto cargado");
       setVista("inicio");
     } catch {
@@ -560,18 +827,19 @@ export default function App() {
   };
 
   const editarGastoGuardar = async () => {
+    const montoNumero = parseMontoInput(form.monto);
     if (!form.descripcion.trim()) return mostrarToast("Poné una descripción", "err");
-    if (!form.monto || isNaN(form.monto) || Number(form.monto) <= 0) return mostrarToast("El monto tiene que ser mayor a 0", "err");
+    if (!form.monto || Number.isNaN(montoNumero) || montoNumero <= 0) return mostrarToast("El monto tiene que ser mayor a 0", "err");
     setGuardando(true);
     try {
       await updateDoc(doc(db, "gastos", gastoEditando.id), {
         descripcion: form.descripcion.trim(),
         categoria: form.categoria,
-        monto: parseFloat(form.monto),
+        monto: montoNumero,
         modo: form.modo,
       });
       mostrarToast("Gasto actualizado");
-      setGastoEditando(null);
+      resetFormGasto();
       setVista("inicio");
     } catch {
       mostrarToast("Error al guardar", "err");
@@ -584,6 +852,10 @@ export default function App() {
       try {
         await deleteDoc(doc(db, "gastos", id));
         setGastos(prev => prev.filter(g => g.id !== id));
+        if (gastoEditando?.id === id) {
+          resetFormGasto();
+          setVista("inicio");
+        }
         mostrarToast("Gasto eliminado");
       } catch {
         mostrarToast("Error al eliminar", "err");
@@ -648,8 +920,33 @@ export default function App() {
   const gastosActuales = gastos.filter(g => !g.saldadoEn);
   const balance = calcularBalance(gastos, usuario.uid);
   const gastosFiltrados = filtro === "todos" ? gastos : gastos.filter(g => g.categoria === filtro);
-  const catEmoji = (id) => CATEGORIAS.find(c => c.id === id)?.emoji || "📦";
+  const catMeta = (id) => getCategoriaMeta(id);
   const nombreGrupo = grupoActivo?.nombre || "";
+  const modoUI = getModoUI(form.modo);
+  const resumenForm = getResumenModo(form.modo, nombreOtro, form.monto);
+  const now = new Date();
+  const mesActual = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const mesesHistorial = [...new Set(gastos.map(g => {
+    const d = new Date(g.timestamp);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  }))].sort().reverse();
+  const mesActivoHistorial = mesSeleccionado && mesesHistorial.includes(mesSeleccionado)
+    ? mesSeleccionado
+    : (mesesHistorial.includes(mesActual) ? mesActual : mesesHistorial[0]);
+  const gastosMesActivo = mesActivoHistorial
+    ? gastos.filter(g => {
+        const d = new Date(g.timestamp);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}` === mesActivoHistorial;
+      })
+    : [];
+  const totalMesActivo = gastosMesActivo.reduce((acc, g) => acc + g.monto, 0);
+  const balanceMesActivo = grupoActivo ? calcularBalance(gastosMesActivo, usuario.uid) : 0;
+  const NOMBRES_MES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  const fmtMes = (ym) => {
+    if (!ym) return "";
+    const [y, m] = ym.split("-");
+    return `${NOMBRES_MES[+m - 1]} ${y}`;
+  };
 
   return (
     <div style={{ minHeight: "100dvh", background: T.bg, fontFamily: "'Georgia', serif", color: T.text, display: "flex", flexDirection: "column", alignItems: "center", paddingBottom: "max(80px, calc(70px + env(safe-area-inset-bottom)))", position: "relative" }}>
@@ -659,11 +956,11 @@ export default function App() {
       {/* Modal de confirmación */}
       {modal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "0 24px" }}>
-          <div style={{ background: T.surface, borderRadius: 22, padding: "28px 24px", maxWidth: 320, width: "100%", border: `1px solid ${T.border}`, boxShadow: "0 8px 32px rgba(0,0,0,0.12)", textAlign: "center" }}>
+          <div style={{ background: "rgba(255,255,255,0.96)", borderRadius: 24, padding: "28px 24px", maxWidth: 332, width: "100%", border: `1px solid ${T.border}`, boxShadow: "0 18px 42px rgba(0,0,0,0.12)", textAlign: "center" }}>
             <div style={{ fontSize: 15, color: T.text, lineHeight: 1.6, marginBottom: 24 }}>{modal.mensaje}</div>
             <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={cerrarModal} style={{ flex: 1, padding: "14px", borderRadius: 12, border: `1px solid ${T.border}`, background: T.surface2, color: T.text, cursor: "pointer", fontSize: 15, fontFamily: "'Georgia', serif" }}>Cancelar</button>
-              <button onClick={() => { cerrarModal(); modal.onConfirm(); }} style={{ flex: 1, padding: "14px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #ff758c, #ff4d6d)", color: "#fff", cursor: "pointer", fontSize: 15, fontWeight: "bold", fontFamily: "'Georgia', serif", boxShadow: "0 4px 14px rgba(255,77,109,0.3)" }}>Confirmar</button>
+              <button onClick={cerrarModal} style={{ flex: 1, padding: "14px", borderRadius: 14, border: `1px solid ${T.border}`, background: T.surface2, color: T.text, cursor: "pointer", fontSize: 15, fontFamily: "'Georgia', serif" }}>Cancelar</button>
+              <button onClick={() => { cerrarModal(); modal.onConfirm(); }} style={{ flex: 1, padding: "14px", borderRadius: 14, border: "none", background: "linear-gradient(135deg, #ff758c, #ff4d6d)", color: "#fff", cursor: "pointer", fontSize: 15, fontWeight: "bold", fontFamily: "'Georgia', serif", boxShadow: "0 10px 24px rgba(255,77,109,0.24)" }}>Confirmar</button>
             </div>
           </div>
         </div>
@@ -671,7 +968,8 @@ export default function App() {
 
       {/* Toast */}
       {toast && (
-        <div style={{ position: "fixed", top: "calc(20px + env(safe-area-inset-top))", left: "50%", transform: "translateX(-50%)", background: toast.tipo === "err" ? "#E8375A" : "#2ec4b6", color: "#fff", padding: "11px 22px", borderRadius: 30, fontWeight: "bold", fontSize: 14, zIndex: 999, boxShadow: "0 4px 20px rgba(0,0,0,0.15)", whiteSpace: "nowrap" }}>
+        <div style={{ position: "fixed", top: "calc(20px + env(safe-area-inset-top))", left: "50%", transform: "translateX(-50%)", background: toast.tipo === "err" ? "#E8375A" : "#2ec4b6", color: "#fff", padding: "12px 18px", borderRadius: 18, fontWeight: "bold", fontSize: 14, zIndex: 999, boxShadow: "0 10px 24px rgba(0,0,0,0.14)", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 8 }}>
+          <IconoLinea name={toast.tipo === "err" ? "trash" : "check"} size={14} color="#fff" />
           {toast.msg}
         </div>
       )}
@@ -686,11 +984,16 @@ export default function App() {
                 Hola, <span style={{ color: T.text, fontWeight: "bold" }}>{usuarioData?.nombre || "bienvenido"}</span>
               </div>
             </div>
-            <button onClick={cerrarSesion} style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.text2, cursor: "pointer", fontSize: 13, padding: "10px 16px", borderRadius: 12, fontFamily: "'Georgia', serif", minHeight: 44, boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>Salir</button>
+            <button onClick={cerrarSesion} style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.text2, cursor: "pointer", fontSize: 13, padding: "10px 16px", borderRadius: 14, fontFamily: "'Georgia', serif", minHeight: 44, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>Salir</button>
           </div>
         ) : (
           <div style={{ textAlign: "center" }}>
-            <button onClick={volverAGrupos} style={{ background: "none", border: "none", color: T.accent2, cursor: "pointer", fontSize: 14, padding: "8px 0", display: "block", margin: "0 auto 8px", minHeight: 44 }}>← Todos los grupos</button>
+            <button onClick={volverAGrupos} style={{ background: "none", border: "none", color: T.accent2, cursor: "pointer", fontSize: 14, padding: "8px 0", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, margin: "0 auto 8px", minHeight: 44 }}>
+              <span style={{ width: 22, height: 22, borderRadius: 999, background: "rgba(255,117,140,0.10)", color: T.accent2, display: "inline-flex", alignItems: "center", justifyContent: "center", transform: "rotate(180deg)" }}>
+                <IconoLinea name="chevron-right" size={12} color={T.accent2} />
+              </span>
+              Todos los grupos
+            </button>
             <h1 style={{ fontSize: 26, fontWeight: "normal", margin: 0, color: T.text }}>{nombreGrupo}</h1>
           </div>
         )}
@@ -704,13 +1007,21 @@ export default function App() {
             <button onClick={async () => {
               await registrarTokenFCM(usuario.uid);
               setNotifPermiso("Notification" in window ? Notification.permission : "denied");
-            }} style={{ width: "100%", padding: "13px 16px", borderRadius: 14, border: `1px solid rgba(255,77,109,0.25)`, background: "rgba(255,77,109,0.05)", color: T.accent, cursor: "pointer", fontSize: 14, marginBottom: 14, fontFamily: "'Georgia', serif", textAlign: "left", minHeight: 44 }}>
-              🔔 Activar notificaciones push
+            }} style={{ width: "100%", padding: "14px 16px", borderRadius: 18, border: `1px solid rgba(255,77,109,0.20)`, background: "rgba(255,77,109,0.05)", color: T.text, cursor: "pointer", fontSize: 14, marginBottom: 14, fontFamily: "'Georgia', serif", textAlign: "left", minHeight: 60, display: "flex", alignItems: "center", gap: 12 }}>
+              <span style={{ width: 38, height: 38, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,77,109,0.10)", color: T.accent, flexShrink: 0 }}>
+                <IconoLinea name="bell" size={18} color={T.accent} />
+              </span>
+              <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <span style={{ fontSize: 14, fontWeight: "bold", color: T.text }}>Activar notificaciones</span>
+                <span style={{ fontSize: 12, color: T.text2 }}>Recibí avisos cuando se carga un gasto nuevo</span>
+              </span>
             </button>
           )}
           {grupos.length === 0 && !mostrarFormGrupo && (
             <div style={{ textAlign: "center", color: T.text2, padding: "48px 0", fontSize: 14 }}>
-              <div style={{ fontSize: 44, marginBottom: 12 }}>👥</div>
+              <div style={{ width: 60, height: 60, margin: "0 auto 14px", borderRadius: 20, background: "rgba(255,77,109,0.08)", color: T.accent, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <IconoLinea name="users" size={24} color={T.accent} />
+              </div>
               Todavía no tenés grupos.<br />¡Creá el primero!
             </div>
           )}
@@ -734,7 +1045,12 @@ export default function App() {
             </div>
           )}
           {!mostrarFormGrupo && (
-            <button onClick={() => setMostrarFormGrupo(true)} style={{ width: "100%", padding: "17px", borderRadius: 14, background: "transparent", border: `2px dashed ${T.border}`, color: T.text2, cursor: "pointer", fontSize: 15, marginTop: grupos.length > 0 ? 4 : 0, fontFamily: "'Georgia', serif", minHeight: 54 }}>+ Nuevo grupo</button>
+            <button onClick={() => setMostrarFormGrupo(true)} style={{ width: "100%", padding: "17px", borderRadius: 18, background: "transparent", border: `2px dashed ${T.border}`, color: T.text2, cursor: "pointer", fontSize: 15, marginTop: grupos.length > 0 ? 4 : 0, fontFamily: "'Georgia', serif", minHeight: 58, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+              <span style={{ width: 32, height: 32, borderRadius: 12, background: "rgba(255,77,109,0.08)", color: T.accent, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <IconoLinea name="plus" size={16} color={T.accent} />
+              </span>
+              Nuevo grupo
+            </button>
           )}
         </div>
       )}
@@ -744,10 +1060,12 @@ export default function App() {
         <div style={{ width: "100%", maxWidth: 430, padding: "0 20px" }}>
           <div style={{
             background: balance === 0 ? "linear-gradient(135deg, #2ec4b6, #1a8a84)" : balance > 0 ? "linear-gradient(135deg, #ff758c, #ff4d6d)" : "linear-gradient(135deg, #667eea, #764ba2)",
-            borderRadius: 22, padding: "26px 24px 22px", marginBottom: 20,
+            borderRadius: 24, padding: "24px 24px 22px", marginBottom: 20,
             boxShadow: "0 6px 24px rgba(0,0,0,0.12)", textAlign: "center",
           }}>
-            <div style={{ fontSize: 11, letterSpacing: 3, textTransform: "uppercase", color: "rgba(255,255,255,0.8)", marginBottom: 8 }}>Balance con {nombreOtro}</div>
+            <div style={{ fontSize: 11, letterSpacing: 3, textTransform: "uppercase", color: "rgba(255,255,255,0.8)", marginBottom: 8 }}>
+              {balance === 0 ? "Balance al día" : balance > 0 ? "Te deben" : "Vos debés"}
+            </div>
             <div style={{ fontSize: 44, fontWeight: "bold", color: "#fff", marginBottom: 4 }}>${formatMonto(Math.abs(balance))}</div>
             <div style={{ fontSize: 15, color: "rgba(255,255,255,0.9)" }}>
               {balance === 0 ? "Están a mano" : balance > 0 ? `${nombreOtro} te debe a vos` : `Vos le debés a ${nombreOtro}`}
@@ -756,17 +1074,19 @@ export default function App() {
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 20 }}>
-            {[
-              { label: "Nuevo gasto", icon: "＋", action: () => setVista("nuevo"), disabled: false },
-              { label: "Historial",   icon: "≡",  action: () => setVista("historial"), disabled: false },
-              { label: "Saldar",      icon: "✓",  action: () => confirmar(`¿Confirman que saldaron las cuentas con ${nombreOtro}?`, saldarCuentas), disabled: gastosActuales.length === 0 },
+              {[
+              { label: "Nuevo gasto", icon: "plus", action: () => { resetFormGasto(); setVista("nuevo"); }, disabled: false },
+              { label: "Historial",   icon: "list", action: () => setVista("historial"), disabled: false },
+              { label: "Saldar",      icon: "check", action: () => confirmar(`¿Confirman que saldaron las cuentas con ${nombreOtro}?`, saldarCuentas), disabled: gastosActuales.length === 0 },
             ].map(btn => (
               <button key={btn.label} onClick={btn.disabled ? undefined : btn.action}
-                style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 16, padding: "18px 8px", color: T.text, cursor: btn.disabled ? "default" : "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, fontSize: 12, fontFamily: "'Georgia', serif", minHeight: 80, opacity: btn.disabled ? 0.35 : 1, boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}
+                style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 18, padding: "16px 8px", color: T.text, cursor: btn.disabled ? "default" : "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, fontSize: 12, fontFamily: "'Georgia', serif", minHeight: 88, opacity: btn.disabled ? 0.35 : 1, boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}
                 onMouseEnter={e => { if (!btn.disabled) e.currentTarget.style.background = T.surface2; }}
                 onMouseLeave={e => { if (!btn.disabled) e.currentTarget.style.background = T.surface; }}
               >
-                <span style={{ fontSize: 20, fontWeight: "bold", color: T.accent }}>{btn.icon}</span>
+                <span style={{ width: 38, height: 38, borderRadius: 12, background: btn.icon === "list" ? "rgba(124,106,246,0.08)" : btn.icon === "check" ? "rgba(46,196,182,0.10)" : "rgba(255,77,109,0.08)", color: btn.icon === "list" ? "#7C6AF6" : btn.icon === "check" ? "#1a8a84" : T.accent, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <IconoLinea name={btn.icon} size={18} color={btn.icon === "list" ? "#7C6AF6" : btn.icon === "check" ? "#1a8a84" : T.accent} />
+                </span>
                 {btn.label}
               </button>
             ))}
@@ -780,196 +1100,74 @@ export default function App() {
           ) : gastosActuales.length > 0 ? (
             <div>
               <div style={{ fontSize: 11, letterSpacing: 3, textTransform: "uppercase", color: T.text2, marginBottom: 12 }}>Últimos gastos</div>
-              {gastosActuales.slice(0, 4).map(g => <GastoRow key={g.id} g={g} catEmoji={catEmoji} nombreGrupo={nombreOtro} miUid={usuario.uid} onEliminar={eliminarGasto} onEditar={abrirEditar} />)}
+              {gastosActuales.slice(0, 4).map(g => <GastoRow key={g.id} g={g} catMeta={catMeta} nombreGrupo={nombreOtro} miUid={usuario.uid} onEliminar={eliminarGasto} onEditar={abrirEditar} />)}
               {gastosActuales.length > 4 && (
                 <button onClick={() => setVista("historial")} style={{ background: "none", border: "none", color: T.accent2, cursor: "pointer", fontSize: 14, padding: "10px 0", width: "100%", textAlign: "center", minHeight: 44 }}>Ver todos ({gastosActuales.length}) →</button>
               )}
             </div>
           ) : (
-            <div style={{ textAlign: "center", color: T.text2, padding: "36px 0", fontSize: 14 }}>
-              <div style={{ fontSize: 44, marginBottom: 12 }}>🌱</div>
+              <div style={{ textAlign: "center", color: T.text2, padding: "36px 0", fontSize: 14 }}>
+              <div style={{ width: 54, height: 54, borderRadius: 18, margin: "0 auto 14px", display: "flex", alignItems: "center", justifyContent: "center", color: T.accent, background: "rgba(255,77,109,0.08)" }}>
+                <IconoLinea name="plus" size={22} color={T.accent} />
+              </div>
               {gastos.length > 0 ? <>Cuentas saldadas con {nombreOtro}.<br />¡Cargá el próximo gasto!</> : <>No hay gastos con {nombreOtro}.<br />¡Cargá el primero!</>}
             </div>
           )}
         </div>
       )}
 
-      {/* ── NUEVO GASTO ── */}
       {vista === "nuevo" && grupoActivo && (
-        <div style={{ width: "100%", maxWidth: 430, padding: "0 20px" }}>
-          <button onClick={() => setVista("inicio")} style={{ background: "none", border: "none", color: T.accent2, cursor: "pointer", fontSize: 14, marginBottom: 16, padding: "8px 0", minHeight: 44 }}>← Volver</button>
-          <div style={{ background: T.surface, borderRadius: 22, padding: "24px 20px", border: `1px solid ${T.border}`, boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
-            <h2 style={{ margin: "0 0 20px", fontSize: 20, fontWeight: "normal", color: T.text }}>Nuevo gasto con {nombreOtro}</h2>
-
-            <label style={labelStyle}>Descripción</label>
-            <input placeholder="Ej: Pizza del viernes" value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} style={inputStyle} maxLength={80} />
-
-            <label style={labelStyle}>Categoría</label>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 16 }}>
-              {CATEGORIAS.map(c => (
-                <button key={c.id} onClick={() => setForm(f => ({ ...f, categoria: c.id }))} style={{ padding: "12px 6px", borderRadius: 12, border: form.categoria === c.id ? `2px solid ${T.accent}` : `1px solid ${T.border}`, background: form.categoria === c.id ? "rgba(255,77,109,0.07)" : T.surface2, color: T.text, cursor: "pointer", fontSize: 12, textAlign: "center", minHeight: 60 }}>
-                  <div style={{ fontSize: 22 }}>{c.emoji}</div>{c.label}
-                </button>
-              ))}
-            </div>
-
-            <label style={labelStyle}>Monto total ($)</label>
-            <input placeholder="0.00" type="number" inputMode="decimal" value={form.monto} onChange={e => setForm(f => ({ ...f, monto: e.target.value }))} style={{ ...inputStyle, fontSize: 24, textAlign: "center" }} />
-
-            <label style={labelStyle}>¿Cómo se divide?</label>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
-              {MODOS.map(m => (
-                <button key={m.id} onClick={() => setForm(f => ({ ...f, modo: m.id }))} style={{ padding: "14px 16px", borderRadius: 13, border: form.modo === m.id ? `2px solid ${T.accent}` : `1px solid ${T.border}`, background: form.modo === m.id ? "rgba(255,77,109,0.07)" : T.surface2, color: T.text, cursor: "pointer", textAlign: "left", display: "flex", gap: 12, alignItems: "center", fontFamily: "'Georgia', serif", minHeight: 60 }}>
-                  <span style={{ fontSize: 22 }}>{m.emoji}</span>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: "bold" }}>{m.label}</div>
-                    <div style={{ fontSize: 12, color: T.text2, marginTop: 2 }}>{m.desc}</div>
-                  </div>
-                </button>
-              ))}
-            </div>
-
-            {form.monto && !isNaN(form.monto) && Number(form.monto) > 0 && (
-              <div style={{ background: "rgba(255,77,109,0.06)", borderRadius: 13, padding: "13px 16px", marginBottom: 16, fontSize: 14, border: "1px solid rgba(255,77,109,0.15)", color: T.text }}>
-                {MODOS.find(m => m.id === form.modo)?.label}: <strong>${formatMonto(form.modo.includes("mitad") ? Number(form.monto) / 2 : Number(form.monto))}</strong>
-              </div>
-            )}
-
-            <button onClick={agregarGasto} disabled={guardando} style={{ width: "100%", padding: "17px", borderRadius: 14, border: "none", background: guardando ? "rgba(255,77,109,0.35)" : "linear-gradient(135deg, #ff758c, #ff4d6d)", color: "#fff", fontSize: 16, fontWeight: "bold", cursor: guardando ? "not-allowed" : "pointer", boxShadow: guardando ? "none" : "0 4px 18px rgba(255,77,109,0.3)", fontFamily: "'Georgia', serif", minHeight: 54 }}>
-              {guardando ? "Guardando..." : "Guardar gasto"}
-            </button>
-          </div>
-        </div>
+        <ExpenseFormView
+          title="Nuevo gasto"
+          subtitle={`Cargá un gasto con ${nombreOtro} en pocos pasos`}
+          submitLabel={guardando ? "Guardando..." : "Guardar gasto"}
+          onBack={() => setVista("inicio")}
+          onSubmit={agregarGasto}
+          disabled={guardando}
+          form={form}
+          setForm={setForm}
+          modoUI={modoUI}
+          resumenForm={resumenForm}
+          nombreOtro={nombreOtro}
+        />
       )}
 
-      {/* ── EDITAR GASTO ── */}
       {vista === "editar" && grupoActivo && gastoEditando && (
-        <div style={{ width: "100%", maxWidth: 430, padding: "0 20px" }}>
-          <button onClick={() => { setVista("inicio"); setGastoEditando(null); }} style={{ background: "none", border: "none", color: T.accent2, cursor: "pointer", fontSize: 14, marginBottom: 16, padding: "8px 0", minHeight: 44 }}>← Volver</button>
-          <div style={{ background: T.surface, borderRadius: 22, padding: "24px 20px", border: `1px solid ${T.border}`, boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
-            <h2 style={{ margin: "0 0 20px", fontSize: 20, fontWeight: "normal", color: T.text }}>Editar gasto</h2>
-
-            <label style={labelStyle}>Descripción</label>
-            <input placeholder="Ej: Pizza del viernes" value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} style={inputStyle} maxLength={80} />
-
-            <label style={labelStyle}>Categoría</label>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 16 }}>
-              {CATEGORIAS.map(c => (
-                <button key={c.id} onClick={() => setForm(f => ({ ...f, categoria: c.id }))} style={{ padding: "12px 6px", borderRadius: 12, border: form.categoria === c.id ? `2px solid ${T.accent}` : `1px solid ${T.border}`, background: form.categoria === c.id ? "rgba(255,77,109,0.07)" : T.surface2, color: T.text, cursor: "pointer", fontSize: 12, textAlign: "center", minHeight: 60 }}>
-                  <div style={{ fontSize: 22 }}>{c.emoji}</div>{c.label}
-                </button>
-              ))}
-            </div>
-
-            <label style={labelStyle}>Monto total ($)</label>
-            <input placeholder="0.00" type="number" inputMode="decimal" value={form.monto} onChange={e => setForm(f => ({ ...f, monto: e.target.value }))} style={{ ...inputStyle, fontSize: 24, textAlign: "center" }} />
-
-            <label style={labelStyle}>¿Cómo se divide?</label>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
-              {MODOS.map(m => (
-                <button key={m.id} onClick={() => setForm(f => ({ ...f, modo: m.id }))} style={{ padding: "14px 16px", borderRadius: 13, border: form.modo === m.id ? `2px solid ${T.accent}` : `1px solid ${T.border}`, background: form.modo === m.id ? "rgba(255,77,109,0.07)" : T.surface2, color: T.text, cursor: "pointer", textAlign: "left", display: "flex", gap: 12, alignItems: "center", fontFamily: "'Georgia', serif", minHeight: 60 }}>
-                  <span style={{ fontSize: 22 }}>{m.emoji}</span>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: "bold" }}>{m.label}</div>
-                    <div style={{ fontSize: 12, color: T.text2, marginTop: 2 }}>{m.desc}</div>
-                  </div>
-                </button>
-              ))}
-            </div>
-
-            {form.monto && !isNaN(form.monto) && Number(form.monto) > 0 && (
-              <div style={{ background: "rgba(255,77,109,0.06)", borderRadius: 13, padding: "13px 16px", marginBottom: 16, fontSize: 14, border: "1px solid rgba(255,77,109,0.15)", color: T.text }}>
-                {MODOS.find(m => m.id === form.modo)?.label}: <strong>${formatMonto(form.modo.includes("mitad") ? Number(form.monto) / 2 : Number(form.monto))}</strong>
-              </div>
-            )}
-
-            <button onClick={editarGastoGuardar} disabled={guardando} style={{ width: "100%", padding: "17px", borderRadius: 14, border: "none", background: guardando ? "rgba(255,77,109,0.35)" : "linear-gradient(135deg, #ff758c, #ff4d6d)", color: "#fff", fontSize: 16, fontWeight: "bold", cursor: guardando ? "not-allowed" : "pointer", boxShadow: guardando ? "none" : "0 4px 18px rgba(255,77,109,0.3)", fontFamily: "'Georgia', serif", minHeight: 54 }}>
-              {guardando ? "Guardando..." : "Guardar cambios"}
-            </button>
-          </div>
-        </div>
+        <ExpenseFormView
+          title="Editar gasto"
+          subtitle="Actualizá el gasto sin cambiar el flujo"
+          submitLabel={guardando ? "Guardando..." : "Guardar cambios"}
+          onBack={() => { resetFormGasto(); setVista("inicio"); }}
+          onSubmit={editarGastoGuardar}
+          disabled={guardando}
+          form={form}
+          setForm={setForm}
+          modoUI={modoUI}
+          resumenForm={resumenForm}
+          nombreOtro={nombreOtro}
+        />
       )}
 
-      {/* ── HISTORIAL ── */}
       {vista === "historial" && grupoActivo && (
-        <div style={{ width: "100%", maxWidth: 430, padding: "0 20px" }}>
-          <button onClick={() => setVista("inicio")} style={{ background: "none", border: "none", color: T.accent2, cursor: "pointer", fontSize: 14, marginBottom: 16, padding: "8px 0", minHeight: 44 }}>← Volver</button>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <h2 style={{ margin: 0, fontSize: 20, fontWeight: "normal", color: T.text }}>Historial con {nombreOtro}</h2>
-            <span style={{ fontSize: 12, color: T.text2 }}>{gastosFiltrados.length}{filtro !== "todos" ? ` de ${gastos.length}` : ""} gastos</span>
-          </div>
-
-          {filtro === "todos" && gastos.length >= 1 && (() => {
-            const now = new Date();
-            const mesActual = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
-            const meses = [...new Set(gastos.map(g => {
-              const d = new Date(g.timestamp);
-              return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
-            }))].sort().reverse();
-            const mes = mesSeleccionado && meses.includes(mesSeleccionado) ? mesSeleccionado : (meses.includes(mesActual) ? mesActual : meses[0]);
-            const gastosMes = gastos.filter(g => {
-              const d = new Date(g.timestamp);
-              return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}` === mes;
-            });
-            const NOMBRES_MES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-            const fmtMes = ym => { const [y,m] = ym.split("-"); return `${NOMBRES_MES[+m-1]} ${y}`; };
-            return (
-              <>
-                {meses.length > 1 && (
-                  <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 8, marginBottom: 4 }}>
-                    {meses.map(m => (
-                      <button key={m} onClick={() => setMesSeleccionado(m)} style={{
-                        padding: "6px 14px", borderRadius: 20, whiteSpace: "nowrap", fontSize: 12,
-                        border: mes === m ? `2px solid ${T.accent}` : `1px solid ${T.border}`,
-                        background: mes === m ? "rgba(255,77,109,0.08)" : T.surface,
-                        color: T.text, cursor: "pointer", minHeight: 32, flexShrink: 0,
-                      }}>{fmtMes(m)}</button>
-                    ))}
-                  </div>
-                )}
-                {gastosMes.length >= 1 && <TortaGastos gastos={gastosMes} />}
-              </>
-            );
-          })()}
-
-          <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 12, marginBottom: 16 }}>
-            <button onClick={() => setFiltro("todos")} style={{ padding: "8px 16px", borderRadius: 20, whiteSpace: "nowrap", border: filtro === "todos" ? `2px solid ${T.accent}` : `1px solid ${T.border}`, background: filtro === "todos" ? "rgba(255,77,109,0.08)" : T.surface, color: T.text, cursor: "pointer", fontSize: 13, minHeight: 36 }}>Todos</button>
-            {CATEGORIAS.filter(c => gastos.some(g => g.categoria === c.id)).map(c => (
-              <button key={c.id} onClick={() => setFiltro(c.id)} style={{ padding: "8px 16px", borderRadius: 20, whiteSpace: "nowrap", border: filtro === c.id ? `2px solid ${T.accent}` : `1px solid ${T.border}`, background: filtro === c.id ? "rgba(255,77,109,0.08)" : T.surface, color: T.text, cursor: "pointer", fontSize: 13, minHeight: 36 }}>{c.emoji} {c.label}</button>
-            ))}
-          </div>
-          {gastosFiltrados.length === 0
-            ? <div style={{ textAlign: "center", color: T.text2, padding: "36px 0", fontSize: 14 }}>No hay gastos en esta categoría</div>
-            : (() => {
-                const items = [];
-                let lastSaldadoEn = -1;
-                for (const g of gastosFiltrados) {
-                  const se = g.saldadoEn || null;
-                  if (se !== null && se !== lastSaldadoEn) {
-                    items.push({ _divider: true, saldadoEn: se });
-                  }
-                  lastSaldadoEn = se;
-                  items.push(g);
-                }
-                return items.map(item => item._divider
-                  ? (
-                    <div key={`saldado-${item.saldadoEn}`} style={{ display: "flex", alignItems: "center", gap: 10, margin: "4px 0 10px" }}>
-                      <div style={{ flex: 1, height: 1, background: T.border }} />
-                      <div style={{ fontSize: 11, color: T.text3, letterSpacing: 0.5, whiteSpace: "nowrap" }}>
-                        ✓ Saldado el {new Date(item.saldadoEn).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" })}
-                      </div>
-                      <div style={{ flex: 1, height: 1, background: T.border }} />
-                    </div>
-                  )
-                  : (
-                    <div key={item.id} style={{ opacity: item.saldadoEn ? 0.5 : 1 }}>
-                      <GastoRow g={item} catEmoji={catEmoji} nombreGrupo={nombreOtro} miUid={usuario.uid} onEliminar={eliminarGasto} onEditar={abrirEditar} />
-                    </div>
-                  )
-                );
-              })()
-          }
-        </div>
+        <HistoryView
+          onBack={() => setVista("inicio")}
+          nombreOtro={nombreOtro}
+          mesesHistorial={mesesHistorial}
+          mesActivoHistorial={mesActivoHistorial}
+          setMesSeleccionado={setMesSeleccionado}
+          fmtMes={fmtMes}
+          filtro={filtro}
+          setFiltro={setFiltro}
+          gastos={gastos}
+          gastosFiltrados={gastosFiltrados}
+          gastosMesActivo={gastosMesActivo}
+          totalMesActivo={totalMesActivo}
+          balanceMesActivo={balanceMesActivo}
+          catMeta={catMeta}
+          usuario={usuario}
+          eliminarGasto={eliminarGasto}
+          abrirEditar={abrirEditar}
+        />
       )}
 
       <style>{`
@@ -978,6 +1176,156 @@ export default function App() {
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 2px; }
       `}</style>
+    </div>
+  );
+}
+
+function ExpenseFormView({ title, subtitle, submitLabel, onBack, onSubmit, disabled, form, setForm, modoUI, resumenForm, nombreOtro }) {
+  return (
+    <div style={{ width: "100%", maxWidth: 430, padding: "0 20px" }}>
+      <button onClick={onBack} style={{ background: "none", border: "none", color: T.accent2, cursor: "pointer", fontSize: 14, marginBottom: 16, padding: "8px 0", minHeight: 44 }}>← Volver</button>
+      <div style={{ background: T.surface, borderRadius: 22, padding: "24px 20px", border: `1px solid ${T.border}`, boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
+        <h2 style={{ margin: "0 0 6px", fontSize: 22, fontWeight: "normal", color: T.text }}>{title}</h2>
+        <div style={{ fontSize: 13, color: T.text2, marginBottom: 22 }}>{subtitle}</div>
+
+        <label style={labelStyle}>Descripción</label>
+        <input placeholder="Ej: Pizza del viernes" value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} style={inputStyle} maxLength={80} />
+
+        <label style={labelStyle}>Monto total ($)</label>
+        <input placeholder="0" type="text" inputMode="decimal" value={form.monto} onChange={e => setForm(f => ({ ...f, monto: formatMontoInput(e.target.value) }))} style={{ ...inputStyle, fontSize: 30, textAlign: "center", fontWeight: "bold", background: T.surface }} />
+
+        <label style={labelStyle}>Quién pagó</label>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+          {[{ id: "yo", label: "Yo" }, { id: "otro", label: nombreOtro }].map(op => (
+            <button key={op.id} onClick={() => setForm(f => ({ ...f, modo: getModoDesdeUI(op.id, modoUI.tipoDivision) }))} style={{
+              minHeight: 58, borderRadius: 16, border: modoUI.quienPago === op.id ? `2px solid ${T.accent}` : `1px solid ${T.border}`,
+              background: modoUI.quienPago === op.id ? "rgba(255,77,109,0.08)" : T.surface,
+              color: T.text, cursor: "pointer", fontSize: 15, fontWeight: "bold", fontFamily: "'Georgia', serif"
+            }}>{op.label}</button>
+          ))}
+        </div>
+
+        <label style={labelStyle}>Cómo se reparte</label>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+          {[{ id: "total", label: "Total" }, { id: "mitad", label: "Mitad" }].map(op => (
+            <button key={op.id} onClick={() => setForm(f => ({ ...f, modo: getModoDesdeUI(modoUI.quienPago, op.id) }))} style={{
+              minHeight: 58, borderRadius: 16, border: modoUI.tipoDivision === op.id ? `2px solid ${T.accent}` : `1px solid ${T.border}`,
+              background: modoUI.tipoDivision === op.id ? "rgba(255,77,109,0.08)" : T.surface,
+              color: T.text, cursor: "pointer", fontSize: 15, fontWeight: "bold", fontFamily: "'Georgia', serif"
+            }}>{op.label}</button>
+          ))}
+        </div>
+
+        <label style={labelStyle}>Categoría</label>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
+          {CATEGORIAS.map(c => (
+            <button key={c.id} onClick={() => setForm(f => ({ ...f, categoria: c.id }))} style={{
+              padding: "10px 14px", borderRadius: 999, border: form.categoria === c.id ? `2px solid ${T.accent}` : `1px solid ${T.border}`,
+              background: form.categoria === c.id ? "rgba(255,77,109,0.08)" : T.surface, color: T.text, cursor: "pointer",
+              fontSize: 13, display: "flex", alignItems: "center", gap: 8, fontFamily: "'Georgia', serif"
+            }}>
+              <IconoLinea name={c.icon} size={15} color={form.categoria === c.id ? T.accent : (CAT_COLORES[c.id] || T.text2)} />
+              {c.label}
+            </button>
+          ))}
+        </div>
+
+        {resumenForm && (
+          <div style={{ background: resumenForm.fondo, borderRadius: 18, padding: "16px", marginBottom: 18, border: `1px solid ${resumenForm.borde}` }}>
+            <div style={{ fontSize: 14, fontWeight: "bold", color: T.text, marginBottom: 6 }}>{resumenForm.titulo}</div>
+            <div style={{ fontSize: 23, fontWeight: "bold", color: resumenForm.color, lineHeight: 1.2 }}>{resumenForm.texto}</div>
+          </div>
+        )}
+
+        <button onClick={onSubmit} disabled={disabled} style={{ width: "100%", padding: "17px", borderRadius: 14, border: "none", background: disabled ? "rgba(255,77,109,0.35)" : "linear-gradient(135deg, #ff758c, #ff4d6d)", color: "#fff", fontSize: 16, fontWeight: "bold", cursor: disabled ? "not-allowed" : "pointer", boxShadow: disabled ? "none" : "0 4px 18px rgba(255,77,109,0.3)", fontFamily: "'Georgia', serif", minHeight: 54 }}>
+          {submitLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function HistoryView({ onBack, nombreOtro, mesesHistorial, mesActivoHistorial, setMesSeleccionado, fmtMes, filtro, setFiltro, gastos, gastosFiltrados, gastosMesActivo, totalMesActivo, balanceMesActivo, catMeta, usuario, eliminarGasto, abrirEditar }) {
+  return (
+    <div style={{ width: "100%", maxWidth: 430, padding: "0 20px" }}>
+      <button onClick={onBack} style={{ background: "none", border: "none", color: T.accent2, cursor: "pointer", fontSize: 14, marginBottom: 16, padding: "8px 0", minHeight: 44 }}>← Volver</button>
+      <div style={{ marginBottom: 16 }}>
+        <h2 style={{ margin: "0 0 6px", fontSize: 22, fontWeight: "normal", color: T.text }}>Historial</h2>
+        <div style={{ fontSize: 13, color: T.text2 }}>Análisis y movimientos con {nombreOtro}</div>
+      </div>
+
+      {mesesHistorial.length > 0 && (
+        <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 8, marginBottom: 12 }}>
+          {mesesHistorial.map(m => (
+            <button key={m} onClick={() => setMesSeleccionado(m)} style={{
+              padding: "8px 13px", borderRadius: 999, whiteSpace: "nowrap", fontSize: 12, fontWeight: "bold",
+              border: mesActivoHistorial === m ? `2px solid ${T.accent}` : `1px solid ${T.border}`,
+              background: mesActivoHistorial === m ? "rgba(255,77,109,0.08)" : T.surface,
+              color: T.text, cursor: "pointer", minHeight: 34, flexShrink: 0, fontFamily: "'Georgia', serif"
+            }}>{fmtMes(m)}</button>
+          ))}
+        </div>
+      )}
+
+      {filtro === "todos" && gastosMesActivo.length >= 1 && (
+        <div style={{ background: T.surface, borderRadius: 22, padding: "18px", marginBottom: 16, border: `1px solid ${T.border}`, boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
+          <div style={{ fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: T.text2, marginBottom: 12 }}>Resumen de {fmtMes(mesActivoHistorial)}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+            <div style={{ background: T.surface2, borderRadius: 16, padding: "14px 12px", border: `1px solid ${T.border}` }}>
+              <div style={{ fontSize: 12, color: T.text2 }}>Total cargado</div>
+              <div style={{ marginTop: 6, fontSize: 18, fontWeight: "bold", color: T.text }}>${formatMonto(totalMesActivo)}</div>
+            </div>
+            <div style={{ background: T.surface2, borderRadius: 16, padding: "14px 12px", border: `1px solid ${T.border}` }}>
+              <div style={{ fontSize: 12, color: T.text2 }}>Balance</div>
+              <div style={{ marginTop: 6, fontSize: 18, fontWeight: "bold", color: balanceMesActivo >= 0 ? "#E84070" : "#7C6AF6" }}>
+                {balanceMesActivo >= 0 ? "Te deben" : "Debés"} ${formatMonto(Math.abs(balanceMesActivo))}
+              </div>
+            </div>
+          </div>
+          <TortaGastos gastos={gastosMesActivo} />
+        </div>
+      )}
+
+      <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 12, marginBottom: 16 }}>
+        <button onClick={() => setFiltro("todos")} style={{ padding: "8px 16px", borderRadius: 20, whiteSpace: "nowrap", border: filtro === "todos" ? `2px solid ${T.accent}` : `1px solid ${T.border}`, background: filtro === "todos" ? "rgba(255,77,109,0.08)" : T.surface, color: T.text, cursor: "pointer", fontSize: 13, minHeight: 36, fontFamily: "'Georgia', serif" }}>Todos</button>
+        {CATEGORIAS.filter(c => gastos.some(g => g.categoria === c.id)).map(c => (
+          <button key={c.id} onClick={() => setFiltro(c.id)} style={{ padding: "8px 14px", borderRadius: 20, whiteSpace: "nowrap", border: filtro === c.id ? `2px solid ${T.accent}` : `1px solid ${T.border}`, background: filtro === c.id ? "rgba(255,77,109,0.08)" : T.surface, color: T.text, cursor: "pointer", fontSize: 13, minHeight: 36, display: "flex", alignItems: "center", gap: 8 }}>
+            <IconoLinea name={c.icon} size={14} color={filtro === c.id ? T.accent : (CAT_COLORES[c.id] || T.text2)} />
+            {c.label}
+          </button>
+        ))}
+      </div>
+
+      {gastosFiltrados.length === 0
+        ? <div style={{ textAlign: "center", color: T.text2, padding: "36px 0", fontSize: 14 }}>No hay gastos en esta categoría</div>
+        : (() => {
+            const items = [];
+            let lastSaldadoEn = -1;
+            for (const g of gastosFiltrados) {
+              const se = g.saldadoEn || null;
+              if (se !== null && se !== lastSaldadoEn) items.push({ _divider: true, saldadoEn: se });
+              lastSaldadoEn = se;
+              items.push(g);
+            }
+            return items.map(item => item._divider
+              ? (
+                <div key={`saldado-${item.saldadoEn}`} style={{ display: "flex", alignItems: "center", gap: 10, margin: "4px 0 10px" }}>
+                  <div style={{ flex: 1, height: 1, background: T.border }} />
+                  <div style={{ fontSize: 11, color: T.text3, letterSpacing: 0.5, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}>
+                    <IconoLinea name="check" size={12} color={T.text3} />
+                    Saldado el {new Date(item.saldadoEn).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" })}
+                  </div>
+                  <div style={{ flex: 1, height: 1, background: T.border }} />
+                </div>
+              )
+              : (
+                <div key={item.id} style={{ opacity: item.saldadoEn ? 0.5 : 1 }}>
+                  <GastoRow g={item} catMeta={catMeta} nombreGrupo={nombreOtro} miUid={usuario.uid} onEliminar={eliminarGasto} onEditar={abrirEditar} />
+                </div>
+              )
+            );
+          })()
+      }
     </div>
   );
 }
@@ -1003,7 +1351,7 @@ function GrupoCard({ grupo, usuarioUid, onAbrir, onEliminar }) {
   const esMio = grupo.creadoPor === usuarioUid;
 
   return (
-    <div style={{ background: T.surface, borderRadius: 18, marginBottom: 12, border: `1px solid ${T.border}`, boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
+    <div style={{ background: T.surface, borderRadius: 20, marginBottom: 12, border: `1px solid ${T.border}`, boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
       <div style={{ display: "flex", alignItems: "center", padding: "16px" }}>
         <div style={{ width: 48, height: 48, borderRadius: 15, background: grupo.color, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: "bold", color: "#fff", boxShadow: "0 3px 10px rgba(0,0,0,0.15)" }}>
           {grupo.nombre.charAt(0).toUpperCase()}
@@ -1012,28 +1360,33 @@ function GrupoCard({ grupo, usuarioUid, onAbrir, onEliminar }) {
           <div style={{ fontSize: 17, fontWeight: "bold", color: T.text, display: "flex", alignItems: "center", gap: 8 }}>
             {grupo.nombre}
             {grupo.miembros.length === 1 && (
-              <span style={{ fontSize: 10, background: "rgba(247,151,30,0.12)", color: "#D4890A", borderRadius: 6, padding: "2px 7px", fontWeight: "normal", letterSpacing: 0.5 }}>PENDIENTE</span>
+              <span style={{ fontSize: 10, background: "rgba(247,151,30,0.12)", color: "#D4890A", borderRadius: 999, padding: "4px 8px", fontWeight: "bold", letterSpacing: 0.5 }}>PENDIENTE</span>
             )}
           </div>
-          <div style={{ fontSize: 12, color: T.text2, marginTop: 3 }}>
+          <div style={{ fontSize: 12, color: T.text2, marginTop: 5, lineHeight: 1.45 }}>
             {grupo.miembros.length === 1
               ? "El otro usuario aún no tiene cuenta"
               : cantGastos === 0 ? "Sin gastos" : `${cantGastos} gasto${cantGastos !== 1 ? "s" : ""}`}
             {grupo.miembros.length > 1 && balance !== 0 && (
-              <span style={{ color: balance > 0 ? "#E84070" : "#7C6AF6", marginLeft: 6 }}>
+              <span style={{ color: balance > 0 ? "#E84070" : "#7C6AF6", marginLeft: 6, fontWeight: "bold" }}>
                 · {balance > 0 ? `te debe $${formatMonto(balance)}` : `le debés $${formatMonto(Math.abs(balance))}`}
               </span>
             )}
             {grupo.miembros.length > 1 && balance === 0 && cantGastos > 0 && (
-              <span style={{ color: "#2ec4b6", marginLeft: 6 }}>· a mano</span>
+              <span style={{ color: "#2ec4b6", marginLeft: 6, fontWeight: "bold" }}>· a mano</span>
             )}
           </div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           {esMio && (
-            <button onClick={() => onEliminar(grupo)} style={{ background: "rgba(232,55,90,0.07)", border: "none", color: "#E8375A", cursor: "pointer", fontSize: 16, width: 44, height: 44, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>🗑</button>
+            <button onClick={() => onEliminar(grupo)} style={{ background: "rgba(232,55,90,0.07)", border: "none", color: "#E8375A", cursor: "pointer", width: 42, height: 42, borderRadius: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <IconoLinea name="trash" size={17} color="#E8375A" />
+            </button>
           )}
-          <button onClick={() => onAbrir(grupo)} style={{ background: grupo.color, border: "none", color: "#fff", cursor: "pointer", fontSize: 13, padding: "0 16px", height: 44, borderRadius: 12, fontWeight: "bold", fontFamily: "'Georgia', serif", boxShadow: "0 3px 10px rgba(0,0,0,0.1)" }}>Ver →</button>
+          <button onClick={() => onAbrir(grupo)} style={{ background: grupo.color, border: "none", color: "#fff", cursor: "pointer", fontSize: 13, padding: "0 14px", height: 42, borderRadius: 13, fontWeight: "bold", fontFamily: "'Georgia', serif", boxShadow: "0 3px 10px rgba(0,0,0,0.1)", display: "flex", alignItems: "center", gap: 8 }}>
+            Ver
+            <IconoLinea name="chevron-right" size={15} color="#fff" />
+          </button>
         </div>
       </div>
     </div>
@@ -1041,19 +1394,28 @@ function GrupoCard({ grupo, usuarioUid, onAbrir, onEliminar }) {
 }
 
 // ─── GastoRow ─────────────────────────────────────────────────────────────────
-function GastoRow({ g, catEmoji, nombreGrupo, miUid, onEliminar, onEditar }) {
+function GastoRow({ g, catMeta, nombreGrupo, miUid, onEliminar, onEditar }) {
   const etiqueta = getEtiqueta(g, miUid, nombreGrupo);
   const { monto, signo, color } = getMontoYSigno(g, miUid);
   const esMio = g.cargadoPor === miUid;
+  const categoria = catMeta(g.categoria);
 
   return (
     <div style={{ background: T.surface, borderRadius: 15, padding: "14px 12px 14px 16px", marginBottom: 10, border: `1px solid ${T.border}`, display: "flex", alignItems: "center", gap: 12, boxShadow: "0 1px 6px rgba(0,0,0,0.04)" }}>
-      <div style={{ fontSize: 24 }}>{catEmoji(g.categoria)}</div>
+      <div style={{ width: 40, height: 40, borderRadius: 13, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.9)", color: CAT_COLORES[g.categoria] || T.text2, boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.04)", flexShrink: 0 }}>
+        <IconoLinea name={categoria.icon} size={18} color={CAT_COLORES[g.categoria] || T.text2} />
+      </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 15, fontWeight: "bold", color: T.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{g.descripcion}</div>
-        <div style={{ fontSize: 11, color: T.text2, marginTop: 3 }}>
-          {g.fecha} · {g.hora} · {etiqueta.emoji} {etiqueta.label}
-          <span style={{ marginLeft: 4 }}>· cargó {esMio ? "vos" : g.cargadoPorNombre || nombreGrupo}</span>
+        <div style={{ fontSize: 11, color: T.text2, marginTop: 3, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 4 }}>
+          <span>{g.fecha} · {g.hora}</span>
+          <span style={{ color: T.text3 }}>·</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <IconoLinea name={etiqueta.icon} size={11} color={color} />
+            {etiqueta.label}
+          </span>
+          <span style={{ color: T.text3 }}>·</span>
+          <span>cargó {esMio ? "vos" : g.cargadoPorNombre || nombreGrupo}</span>
         </div>
       </div>
       <div style={{ textAlign: "right", flexShrink: 0 }}>
@@ -1061,9 +1423,13 @@ function GastoRow({ g, catEmoji, nombreGrupo, miUid, onEliminar, onEditar }) {
         <div style={{ fontSize: 10, color: T.text3 }}>total: ${formatMonto(g.monto)}</div>
       </div>
       {esMio && (
-        <button onClick={() => onEditar(g)} style={{ background: "none", border: "none", color: T.text3, cursor: "pointer", fontSize: 15, width: 32, height: 44, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>✏️</button>
+        <button onClick={() => onEditar(g)} style={{ background: "none", border: "none", color: T.text3, cursor: "pointer", width: 32, height: 44, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <IconoLinea name="edit" size={15} color={T.text3} />
+        </button>
       )}
-      <button onClick={() => onEliminar(g.id)} style={{ background: "none", border: "none", color: T.text3, cursor: "pointer", fontSize: 20, width: 32, height: 44, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>×</button>
+      <button onClick={() => onEliminar(g.id)} style={{ background: "none", border: "none", color: T.text3, cursor: "pointer", width: 32, height: 44, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <IconoLinea name="trash" size={15} color={T.text3} />
+      </button>
     </div>
   );
 }
