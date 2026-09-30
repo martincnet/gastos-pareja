@@ -14,36 +14,50 @@ service cloud.firestore {
     match /grupos/{grupoId} {
       allow read: if request.auth != null && (
         request.auth.uid in resource.data.miembros ||
-        request.auth.token.email in resource.data.emailsInvitados
+        request.auth.token.email.lower() in resource.data.emailsInvitados
       );
       allow create: if request.auth != null &&
         request.auth.uid in request.resource.data.miembros &&
         request.auth.uid == request.resource.data.creadoPor;
-      allow update: if request.auth != null &&
-        request.auth.uid in resource.data.miembros;
+      allow update: if request.auth != null && (
+        // Un miembro puede renombrar el grupo (solo el campo nombre)
+        (request.auth.uid in resource.data.miembros &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nombre']) &&
+         request.resource.data.nombre is string &&
+         request.resource.data.nombre.size() > 0 &&
+         request.resource.data.nombre.size() <= 40) ||
+        // Flujo de join: un invitado se agrega como miembro (únicamente esos dos campos)
+        (request.auth.token.email.lower() in resource.data.emailsInvitados &&
+        !(request.auth.uid in resource.data.miembros) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['miembros', 'miembrosNombres']) &&
+        request.resource.data.miembros.hasAll(resource.data.miembros) &&
+        request.resource.data.miembros.size() == resource.data.miembros.size() + 1 &&
+        request.auth.uid in request.resource.data.miembros)
+      );
       allow delete: if request.auth != null &&
         request.auth.uid == resource.data.creadoPor;
     }
 
-    // Gastos: cualquier usuario autenticado puede leer (las queries de colección no
-    // soportan get() en reglas — la seguridad real está en que los grupoIds son
-    // IDs autogenerados imposibles de adivinar, y los grupos tienen sus propias reglas)
+    // Gastos: solo miembros del grupo al que pertenece el gasto pueden leer
     // Al crear: cargadoPor debe ser el usuario y debe ser miembro del grupo
-    // Solo el que cargó puede editar; cualquier miembro del grupo puede eliminar
+    // Solo el que cargó puede editar o eliminar; cualquier miembro del grupo puede saldar
     match /gastos/{gastoId} {
-      allow read: if request.auth != null;
+      allow read: if request.auth != null &&
+        request.auth.uid in get(/databases/$(database)/documents/grupos/$(resource.data.grupoId)).data.miembros;
       allow create: if request.auth != null &&
         request.resource.data.cargadoPor == request.auth.uid &&
         request.auth.uid in get(/databases/$(database)/documents/grupos/$(request.resource.data.grupoId)).data.miembros;
       allow update: if request.auth != null && (
-        // El que cargó puede editar cualquier campo
-        request.auth.uid == resource.data.cargadoPor ||
+        // El que cargó puede editar, pero sin cambiar el grupo ni el autor
+        (request.auth.uid == resource.data.cargadoPor &&
+         request.resource.data.cargadoPor == resource.data.cargadoPor &&
+         request.resource.data.grupoId == resource.data.grupoId) ||
         // Cualquier miembro del grupo puede marcar como saldado (solo ese campo)
         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['saldadoEn']) &&
          request.auth.uid in get(/databases/$(database)/documents/grupos/$(resource.data.grupoId)).data.miembros)
       );
       allow delete: if request.auth != null &&
-        request.auth.uid in get(/databases/$(database)/documents/grupos/$(resource.data.grupoId)).data.miembros;
+        request.auth.uid == resource.data.cargadoPor;
     }
 
     // FCM Tokens: solo el propio usuario

@@ -42,3 +42,4 @@ export const CAT_COLORES = {
 
 export const FORM_INICIAL = { descripcion: "", categoria: "comida", monto: "", modo: "pague_yo_mitad" };
 export const NOMBRES_MES  = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+export const NOMBRES_MES_LARGO = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];

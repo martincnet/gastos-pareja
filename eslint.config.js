@@ -26,4 +26,16 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
   },
+  {
+    files: ['src/**/*.{js,jsx}'],
+    languageOptions: { globals: { __BUILD_ID__: 'readonly' } },
+  },
+  {
+    files: ['functions/**/*.js'],
+    languageOptions: { sourceType: 'commonjs', globals: globals.node },
+  },
+  {
+    files: ['public/firebase-messaging-sw.js'],
+    languageOptions: { globals: { ...globals.serviceworker, firebase: 'readonly', BUILD_ID: 'readonly' } },
+  },
 ])

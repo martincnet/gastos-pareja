@@ -37,23 +37,20 @@ exports.notificarNuevoGasto = onDocumentCreated("gastos/{gastoId}", async (event
   // pago_otro_* → el otro pagó → el que cargó debe → el receptor es acreedor
   const receptorDebe = modo.startsWith("pague_yo");
   const montoStr = formatMonto(montoNotif);
+  const nombre = cargadoPorNombre || grupo.miembrosNombres?.[cargadoPor] || "Tu pareja";
 
   const body = receptorDebe
-    ? `Le debés $${montoStr} a ${cargadoPorNombre} · ${descripcion}`
-    : `${cargadoPorNombre} te debe $${montoStr} · ${descripcion}`;
+    ? `Le debés $${montoStr} a ${nombre} · ${descripcion}`
+    : `${nombre} te debe $${montoStr} · ${descripcion}`;
 
   try {
     await messaging.send({
       token,
-      notification: {
+      data: {
         title: `💸 Nuevo gasto en ${grupo.nombre}`,
         body,
       },
       webpush: {
-        notification: {
-          icon: "/favicon.ico",
-          vibrate: [200, 100, 200],
-        },
         fcm_options: {
           link: "/",
         },

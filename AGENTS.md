@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
 ## Commands
 
@@ -24,11 +24,7 @@ No test framework is configured.
 **SplitEasy** is a Spanish-language expense-splitting PWA for couples, built with React + Vite + Firebase.
 
 ### Key structure
-- `src/App.jsx` — App shell: auth, Firestore listeners, all writes (gastos, saldar, grupos), header, sheets/modals and the `vista` switch.
-- `src/components/` — Views (`HomeView`, `HistoryView`, `ExpenseFormView`, `ReporteView`, `AuthScreen`) and pieces (`GastoRow`, `GrupoCard`, `IconoLinea`…).
-- `src/utils.js` — Money/date helpers. Balance math lives here (`calcularBalance`, `efectoEnBalance`, `agruparPorPeriodo`); always rounds to cents.
-- `src/theme.js` + `src/themeContext.js` — Light/dark tokens (`pos`/`neg`/`ok` for money semantics) shared via `TemaContext`.
-- The gastos `onSnapshot` listener is the single source of truth: writes are fire-and-forget (no manual `setGastos` after writing) and Firestore uses a persistent local cache.
+- `src/App.jsx` — Monolithic ~700-line component containing all app logic and views. No component files; all views are rendered inline based on `vista` state.
 - `functions/index.js` — Single Firebase Cloud Function that fires on `gastos/{gastoId}` creation to send FCM push notifications to the other group member.
 - `public/firebase-messaging-sw.js` — Service Worker for background push notifications.
 
@@ -40,7 +36,7 @@ The app uses a `vista` state variable to switch between views — no React Route
 - `"historial"` — Expense history with filtering
 
 ### Firebase / data model
-Firebase config (API keys) is embedded directly in `src/firebase.js`. Collections:
+Firebase config (API keys) is embedded directly in `App.jsx`. Collections:
 - **usuarios** `{uid}` — User profiles (`nombre`, `email`)
 - **grupos** `{id}` — Groups with `miembros[]` (array of UIDs), `emailsInvitados[]`, `miembrosNombres{}` map
 - **gastos** `{id}` — Expenses with `grupoId`, `monto`, `modo`, `categoria`, `cargadoPor`
