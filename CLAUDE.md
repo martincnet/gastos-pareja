@@ -10,9 +10,10 @@ npm run build      # Production build → dist/
 npm run preview    # Preview production build
 npm run lint       # ESLint check
 
-# Firebase (requires firebase-tools installed globally)
-firebase deploy --only hosting   # Deploy frontend
-firebase deploy --only functions # Deploy Cloud Functions
+# Frontend is hosted on Vercel: pushing to main deploys automatically.
+# Firebase only hosts Firestore rules + Cloud Functions. Always target the
+# right project (a parent-folder config points to another project):
+npm run deploy:firebase          # = firebase deploy --only firestore:rules,functions --project gastos-pareja-a2a0b
 firebase emulators:start         # Local emulator suite
 cd functions && npm run serve    # Serve functions locally
 ```
